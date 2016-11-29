@@ -1,7 +1,7 @@
 package de.prob2.ui.consoles.groovy.objects;
 
-import java.io.IOException;
 import java.util.Map;
+
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
@@ -9,12 +9,11 @@ import javax.script.ScriptEngine;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
-import de.prob2.ui.prob2fx.CurrentStage;
+import de.prob2.ui.internal.StageManager;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -33,24 +32,13 @@ public final class GroovyObjectStage extends Stage {
 	@FXML private TableColumn<GroovyObjectItem, String> values;
 
 	private ObservableList<GroovyObjectItem> items = FXCollections.observableArrayList();
-
-	private FXMLLoader loader;
-	private CurrentStage currentStage;
+	
+	private StageManager stageManager;
 
 	@Inject
-	private GroovyObjectStage(FXMLLoader loader, CurrentStage currentStage) {
-		this.loader = loader;
-		try {
-			loader.setLocation(getClass().getResource("groovy_object_stage.fxml"));
-			loader.setRoot(this);
-			loader.setController(this);
-			loader.load();
-		} catch (IOException e) {
-			logger.error("loading fxml failed", e);
-		}
-		this.currentStage = currentStage;
-
-		currentStage.register(this);
+	private GroovyObjectStage(StageManager stageManager) {
+		this.stageManager = stageManager;
+		this.stageManager.loadFXML(this, "groovy_object_stage.fxml");
 	}
 
 	@Override
@@ -72,8 +60,7 @@ public final class GroovyObjectStage extends Stage {
 			if(entry == null || entry.getKey() == null || entry.getValue() == null) {
 				continue;
 			}
-			GroovyClassStage stage = new GroovyClassStage(loader);
-			currentStage.register(stage);
+			GroovyClassStage stage = new GroovyClassStage(stageManager);
 			items.add(new GroovyObjectItem(entry.getKey(), entry.getValue(), stage));
 		}
 	}

@@ -1,6 +1,5 @@
 package de.prob2.ui.animations;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -16,10 +15,11 @@ import de.prob.statespace.Trace;
 import de.prob.statespace.Transition;
 
 import de.prob2.ui.internal.IComponents;
+import de.prob2.ui.internal.StageManager;
+
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
@@ -47,17 +47,10 @@ public final class AnimationsView extends AnchorPane implements IAnimationChange
 	private int previousSize = 0;
 
 	@Inject
-	private AnimationsView(final AnimationSelector animations, final FXMLLoader loader) {
+	private AnimationsView(final AnimationSelector animations, final StageManager stageManager) {
 		this.animations = animations;
 		this.animations.registerAnimationChangeListener(this);
-		try {
-			loader.setLocation(getClass().getResource("animations_view.fxml"));
-			loader.setRoot(this);
-			loader.setController(this);
-			loader.load();
-		} catch (IOException e) {
-			logger.error("loading fxml failed", e);
-		}
+		stageManager.loadFXML(this, "animations_view.fxml");
 	}
 
 	@FXML

@@ -1,11 +1,9 @@
 package de.prob2.ui.modelchecking;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
@@ -21,7 +19,7 @@ import de.prob.statespace.AnimationSelector;
 import de.prob.statespace.StateSpace;
 
 import de.prob2.ui.internal.IComponents;
-import de.prob2.ui.prob2fx.CurrentStage;
+import de.prob2.ui.internal.StageManager;
 import de.prob2.ui.prob2fx.CurrentTrace;
 import de.prob2.ui.stats.StatsView;
 
@@ -29,7 +27,6 @@ import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
@@ -49,8 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class ModelcheckingController extends ScrollPane implements IModelCheckListener, IComponents {
-	private final class ModelcheckingStageController {
-		@FXML private Stage mcheckStage;
+	private final class ModelcheckingStageController extends Stage {
 		@FXML private CheckBox findDeadlocks;
 		@FXML private CheckBox findInvViolations;
 		@FXML private CheckBox findBAViolations;
@@ -58,9 +54,8 @@ public final class ModelcheckingController extends ScrollPane implements IModelC
 		@FXML private CheckBox stopAtFullCoverage;
 		@FXML private CheckBox searchForNewErrors;
 		
-		@FXML
-		public void initialize() {
-			currentStage.register(this.mcheckStage);
+		private ModelcheckingStageController() {
+			stageManager.loadFXML(this, "modelchecking_stage.fxml");
 		}
 		
 		@FXML
@@ -68,11 +63,10 @@ public final class ModelcheckingController extends ScrollPane implements IModelC
 			if (currentTrace.exists()) {
 				startModelchecking(getOptions(), animations.getCurrentTrace().getStateSpace());
 			} else {
-				final Alert alert = new Alert(Alert.AlertType.ERROR, "No specification file loaded. Cannot run model checker.");
+				final Alert alert = stageManager.makeAlert(Alert.AlertType.ERROR, "No specification file loaded. Cannot run model checker.");
 				alert.setHeaderText("Specification file missing");
-				alert.getDialogPane().getStylesheets().add("prob.css");
 				alert.showAndWait();
-				this.mcheckStage.close();
+				this.hide();
 			}
 		}
 		
@@ -92,7 +86,7 @@ public final class ModelcheckingController extends ScrollPane implements IModelC
 		@FXML
 		void cancel(ActionEvent event) {
 			cancelModelchecking();
-			this.mcheckStage.getScene().getWindow().hide();
+			this.hide();
 		}
 	}
 	
@@ -102,10 +96,9 @@ public final class ModelcheckingController extends ScrollPane implements IModelC
 	@FXML private VBox historyBox;
 	@FXML private Button addModelCheckButton;
 	
-	private final Injector injector;
 	private final AnimationSelector animations;
 	private final CurrentTrace currentTrace;
-	private final CurrentStage currentStage;
+	private final StageManager stageManager;
 	private final StatsView statsView;
 	private final ModelcheckingStageController stageController;
 
@@ -116,56 +109,38 @@ public final class ModelcheckingController extends ScrollPane implements IModelC
 
 	@Inject
 	private ModelcheckingController(
-		final Injector injector,
 		final AnimationSelector animations,
 		final CurrentTrace currentTrace,
-		final CurrentStage currentStage,
+		final StageManager stageManager,
 		final StatsView statsView
 	) {
-		this.injector = injector;
 		this.animations = animations;
 		this.currentTrace = currentTrace;
-		this.currentStage = currentStage;
+		this.stageManager = stageManager;
 		this.statsView = statsView;
 		
-		final FXMLLoader mainLoader = injector.getInstance(FXMLLoader.class);
-		mainLoader.setLocation(getClass().getResource("modelchecking_stats_view.fxml"));
-		mainLoader.setRoot(this);
-		mainLoader.setController(this);
-		try {
-			mainLoader.load();
-		} catch (IOException e) {
-			logger.error("loading fxml failed", e);
-		}
+		stageManager.loadFXML(this, "modelchecking_stats_view.fxml");
 		
-		final FXMLLoader stageLoader = injector.getInstance(FXMLLoader.class);
-		stageLoader.setLocation(getClass().getResource("modelchecking_stage.fxml"));
-		this.stageController = new ModelcheckingStageController();
-		stageLoader.setController(this.stageController);
-		try {
-			stageLoader.load();
-		} catch (IOException e) {
-			logger.error("loading fxml failed", e);
-		}
+		this.stageController = this.new ModelcheckingStageController();
 	}
 
 	@FXML
 	public void initialize() {
-		showStats(new ModelCheckStats(injector.getInstance(FXMLLoader.class), this, statsView));
+		showStats(new ModelCheckStats(stageManager, this, statsView));
 		historyNodeList = historyBox.getChildren();
 		addModelCheckButton.disableProperty().bind(currentTrace.existsProperty().not());
 	}
 
 	@FXML
 	private void addModelCheck() {
-		if(!stageController.mcheckStage.isShowing()) {
-			this.stageController.mcheckStage.showAndWait();
+		if(!stageController.isShowing()) {
+			this.stageController.showAndWait();
 		}
 	}
 
 	void startModelchecking(ModelCheckingOptions options, StateSpace currentStateSpace) {
 		currentOptions = options;
-		currentStats = new ModelCheckStats(injector.getInstance(FXMLLoader.class), this, statsView);
+		currentStats = new ModelCheckStats(stageManager, this, statsView);
 		checker = new ModelChecker(new ConsistencyChecker(currentStateSpace, options, null, this));
 		currentStats.addJob(checker.getJobId(), checker);
 		showStats(currentStats);
@@ -276,7 +251,7 @@ public final class ModelcheckingController extends ScrollPane implements IModelC
 	}
 
 	public void resetView() {
-		showStats(new ModelCheckStats(injector.getInstance(FXMLLoader.class), this, statsView));
+		showStats(new ModelCheckStats(stageManager, this, statsView));
 		historyNodeList.clear();
 	}
 
@@ -292,7 +267,7 @@ public final class ModelcheckingController extends ScrollPane implements IModelC
 		Node historyNode = toHistoryNode(historyItem);
 		Platform.runLater(() -> {
 			historyNodeList.add(historyNode);
-			this.stageController.mcheckStage.close();
+			this.stageController.hide();
 		});
 	}
 }

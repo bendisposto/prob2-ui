@@ -1,6 +1,5 @@
 package de.prob2.ui;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 import com.google.inject.Inject;
@@ -8,12 +7,12 @@ import com.google.inject.Singleton;
 
 import de.prob2.ui.animations.AnimationsView;
 import de.prob2.ui.history.HistoryView;
+import de.prob2.ui.internal.StageManager;
 import de.prob2.ui.modelchecking.ModelcheckingController;
 import de.prob2.ui.operations.OperationsView;
-
 import de.prob2.ui.stats.StatsView;
+
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
@@ -67,15 +66,8 @@ public final class AnimationPerspective extends BorderPane {
 	private HashMap<Node, TitledPane> nodeMap = new HashMap<>();
 
 	@Inject
-	private AnimationPerspective(FXMLLoader loader) {
-		loader.setLocation(getClass().getResource("animation_perspective.fxml"));
-		loader.setRoot(this);
-		loader.setController(this);
-		try {
-			loader.load();
-		} catch (IOException e) {
-			logger.error("loading fxml failed", e);
-		}
+	private AnimationPerspective(StageManager stageManager) {
+		stageManager.loadFXML(this, "animation_perspective.fxml");
 	}
 
 	@FXML

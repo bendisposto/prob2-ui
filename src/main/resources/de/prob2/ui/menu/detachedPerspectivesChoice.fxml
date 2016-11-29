@@ -6,7 +6,7 @@
 <?import javafx.scene.Scene?>
 <?import javafx.stage.Stage?>
 <?import javafx.scene.control.Button?>
-<Stage fx:id="detached" title="%menu.perspectives.detach" resizable="false" xmlns:fx="http://javafx.com/fxml/1">
+<fx:root type="Stage" title="%menu.perspectives.detach" resizable="false" xmlns:fx="http://javafx.com/fxml/1">
     <scene>
         <Scene fill="TRANSPARENT">
             <AnchorPane stylesheets="@/prob.css" styleClass="dialog">
@@ -21,4 +21,4 @@
             </AnchorPane>
         </Scene>
     </scene>
-</Stage>
+</fx:root>

@@ -16,10 +16,11 @@ import java.util.regex.Pattern;
 
 import com.google.inject.Inject;
 
+import de.prob2.ui.internal.StageManager;
+
 import difflib.DiffUtils;
 
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -57,15 +58,8 @@ public class FullValueStage extends Stage {
 	private AsciiUnicodeString previousValue;
 	
 	@Inject
-	public FullValueStage(final FXMLLoader loader) {
-		loader.setLocation(getClass().getResource("full_value_stage.fxml"));
-		loader.setRoot(this);
-		loader.setController(this);
-		try {
-			loader.load();
-		} catch (IOException e) {
-			logger.error("loading fxml failed", e);
-		}
+	public FullValueStage(final StageManager stageManager) {
+		stageManager.loadFXML(this, "full_value_stage.fxml");
 	}
 	
 	private static String prettify(final String s) {

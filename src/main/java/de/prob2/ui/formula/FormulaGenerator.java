@@ -9,20 +9,20 @@ import de.prob.animator.domainobjects.EvaluationException;
 import de.prob.animator.domainobjects.ExpandedFormula;
 import de.prob.animator.domainobjects.IEvalElement;
 
-import de.prob2.ui.prob2fx.CurrentStage;
 import de.prob2.ui.prob2fx.CurrentTrace;
+import de.prob2.ui.internal.StageManager;
 
 @Singleton
 public final class FormulaGenerator {
 	
 	private final CurrentTrace currentTrace;
-	private final CurrentStage currentStage;
+	private final StageManager stageManager;
 
 
 	@Inject
-	private FormulaGenerator(final CurrentTrace currentTrace, final CurrentStage currentStage) {
+	private FormulaGenerator(final CurrentTrace currentTrace, final StageManager stageManager) {
 		this.currentTrace = currentTrace;
-		this.currentStage = currentStage;
+		this.stageManager = stageManager;
 	}
 
 	private ExpandedFormula expandFormula(final IEvalElement formula) {
@@ -41,8 +41,8 @@ public final class FormulaGenerator {
 	}
 
 	public void showFormula(final IEvalElement formula) {
-		FormulaView fview = new FormulaView(new FormulaGraph(new FormulaNode(expandFormula(formula))));
-		currentStage.register(fview);
+		FormulaView fview = new FormulaView(stageManager, new FormulaGraph(new FormulaNode(expandFormula(formula))));
+		stageManager.register(fview);
 		fview.show();
 	}
 

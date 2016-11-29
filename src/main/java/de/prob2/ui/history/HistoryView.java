@@ -1,6 +1,5 @@
 package de.prob2.ui.history;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -10,11 +9,11 @@ import de.prob.statespace.Trace;
 import de.prob.statespace.Transition;
 
 import de.prob2.ui.internal.IComponents;
+import de.prob2.ui.internal.StageManager;
 import de.prob2.ui.prob2fx.CurrentTrace;
 
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.Cursor;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListCell;
@@ -73,16 +72,9 @@ public final class HistoryView extends AnchorPane implements IComponents{
 	private final CurrentTrace currentTrace;
 
 	@Inject
-	private HistoryView(FXMLLoader loader, CurrentTrace currentTrace) {
+	private HistoryView(StageManager stageManager, CurrentTrace currentTrace) {
 		this.currentTrace = currentTrace;
-		loader.setLocation(getClass().getResource("history_view.fxml"));
-		loader.setRoot(this);
-		loader.setController(this);
-		try {
-			loader.load();
-		} catch (IOException e) {
-			logger.error("loading fxml failed", e);
-		}
+		stageManager.loadFXML(this, "history_view.fxml");
 	}
 
 	@FXML
