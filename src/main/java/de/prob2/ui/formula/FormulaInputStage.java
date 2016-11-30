@@ -51,7 +51,7 @@ public class FormulaInputStage extends Stage {
 	
 	@Inject
 	public FormulaInputStage(StageManager stageManager, Injector injector) {
-		stageManager.loadFXML(this, "formula_input_stage.fxml");
+		stageManager.loadFXML(this, "formula_input_stage.fxml", null);
 		this.injector = injector;
 		setButtonAction();
 	}

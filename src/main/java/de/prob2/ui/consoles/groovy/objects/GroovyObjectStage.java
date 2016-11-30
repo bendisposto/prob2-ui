@@ -38,7 +38,7 @@ public final class GroovyObjectStage extends Stage {
 	@Inject
 	private GroovyObjectStage(StageManager stageManager) {
 		this.stageManager = stageManager;
-		this.stageManager.loadFXML(this, "groovy_object_stage.fxml");
+		this.stageManager.loadFXML(this, "groovy_object_stage.fxml", this.getClass().getName());
 	}
 
 	@Override

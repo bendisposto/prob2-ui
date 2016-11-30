@@ -55,7 +55,7 @@ public final class ModelcheckingController extends ScrollPane implements IModelC
 		@FXML private CheckBox searchForNewErrors;
 		
 		private ModelcheckingStageController() {
-			stageManager.loadFXML(this, "modelchecking_stage.fxml");
+			stageManager.loadFXML(this, "modelchecking_stage.fxml", this.getClass().getName());
 		}
 		
 		@FXML

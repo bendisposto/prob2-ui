@@ -41,9 +41,7 @@ public final class FormulaGenerator {
 	}
 
 	public void showFormula(final IEvalElement formula) {
-		FormulaView fview = new FormulaView(stageManager, new FormulaGraph(new FormulaNode(expandFormula(formula))));
-		stageManager.register(fview);
-		fview.show();
+		new FormulaView(stageManager, new FormulaGraph(new FormulaNode(expandFormula(formula)))).show();
 	}
 
 	public void parseAndShowFormula(final String formula) {

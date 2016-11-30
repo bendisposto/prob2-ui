@@ -32,7 +32,6 @@ public class ProB2 extends Application {
 		injector = Guice.createInjector(com.google.inject.Stage.PRODUCTION, module);
 		config = injector.getInstance(Config.class);
 		UIState uiState = injector.getInstance(UIState.class);
-		UIPersistence uiPersistence = new UIPersistence(uiState, injector);
 		FXMLLoader loader = injector.getInstance(FXMLLoader.class);
 		loader.setLocation(getClass().getResource("main.fxml"));
 		loader.load();
@@ -43,10 +42,10 @@ public class ProB2 extends Application {
 		stage.setScene(mainScene);
 		stage.setOnHidden(e -> Platform.exit());
 		
-		injector.getInstance(StageManager.class).register(stage);
-		uiPersistence.open();
+		// No persistence needed for the main stage, because it is created automatically
+		injector.getInstance(StageManager.class).register(stage, null);
 		stage.show();
-		
+		new UIPersistence(uiState, injector).open();
 	}
 	
 	@Override

@@ -15,7 +15,7 @@ public final class BConsoleStage extends Stage {
 	private BConsoleStage(StageManager stageManager, BConsole bConsole) {
 		this.setTitle("B Console");
 		this.setScene(new Scene(new StackPane(bConsole), 800, 600));
-		stageManager.register(this);
+		stageManager.register(this, this.getClass().getName());
 	}
 
 }

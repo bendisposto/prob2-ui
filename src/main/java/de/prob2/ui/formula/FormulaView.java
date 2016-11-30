@@ -32,7 +32,7 @@ public class FormulaView extends Stage {
 		Scene scene = new Scene(new StackPane(root), 1024, 768);
 		this.setTitle("Mathematical Expression");
 		this.setScene(scene);
-		stageManager.register(this);
+		stageManager.register(this, null);
 	}
 	
 	private void setEventListeners() {

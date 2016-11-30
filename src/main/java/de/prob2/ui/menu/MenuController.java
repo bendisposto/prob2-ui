@@ -83,10 +83,10 @@ public final class MenuController extends MenuBar {
 		private final Preferences windowPrefs;
 		private final Set<Stage> wrapperStages;
 		
-		private DetachViewStageController(final StageManager stageManager) {
+		private DetachViewStageController() {
 			windowPrefs = Preferences.userNodeForPackage(MenuController.DetachViewStageController.class);
 			wrapperStages = new HashSet<>();
-			stageManager.loadFXML(this, "detachedPerspectivesChoice.fxml");
+			stageManager.loadFXML(this, "detachedPerspectivesChoice.fxml", this.getClass().getName());
 		}
 
 		@FXML
@@ -223,7 +223,7 @@ public final class MenuController extends MenuBar {
 			
 			Scene scene = new Scene(node);
 			stage.setScene(scene);
-			stageManager.register(stage);
+			stageManager.register(stage, this.getClass().getName());
 			stage.show();
 		}
 	}
@@ -312,7 +312,7 @@ public final class MenuController extends MenuBar {
 			tk.setGlobalMenuBar(this);
 		}
 
-		this.dvController = this.new DetachViewStageController(stageManager);
+		this.dvController = this.new DetachViewStageController();
 	}
 	
 	@FXML
@@ -379,8 +379,9 @@ public final class MenuController extends MenuBar {
 	}
 
 	@FXML
-	private void handleLoadDetached() {
+	public void handleLoadDetached() {
 		this.dvController.show();
+		this.dvController.toFront();
 	}
 	
 	public void applyDetached() {
@@ -462,7 +463,7 @@ public final class MenuController extends MenuBar {
 	}
 
 	@FXML
-	public void handlePreferences() {
+	private void handlePreferences() {
 		final Stage preferencesStage = injector.getInstance(PreferencesStage.class);
 		preferencesStage.show();
 		preferencesStage.toFront();
@@ -476,14 +477,14 @@ public final class MenuController extends MenuBar {
 	}
 
 	@FXML
-	public void handleGroovyConsole() {
+	private void handleGroovyConsole() {
 		final Stage groovyConsoleStage = injector.getInstance(GroovyConsoleStage.class);
 		groovyConsoleStage.show();
 		groovyConsoleStage.toFront();
 	}
 	
 	@FXML
-	public void handleBConsole() {
+	private void handleBConsole() {
 		final Stage bConsoleStage = injector.getInstance(BConsoleStage.class);
 		bConsoleStage.show();
 		bConsoleStage.toFront();
@@ -524,7 +525,7 @@ public final class MenuController extends MenuBar {
 		webEnging.setJavaScriptEnabled(true);
 		webEnging.load("https://probjira.atlassian.net/secure/RapidBoard.jspa?rapidView=8");
 		
-		Stage stage = stageManager.makeStage(new Scene(webView));
+		Stage stage = stageManager.makeStage(new Scene(webView), null);
 		stage.setTitle("Report Bug");
 		stage.show();
 	}

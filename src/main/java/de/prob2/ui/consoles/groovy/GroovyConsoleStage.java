@@ -22,7 +22,7 @@ public final class GroovyConsoleStage extends Stage {
 		
 		this.setScene(new Scene(new StackPane(new VirtualizedScrollPane<>(groovyConsole)), 800, 600));
 		this.setOnHidden(e -> groovyConsole.closeObjectStage());
-		stageManager.register(this);
+		stageManager.register(this, this.getClass().getName());
 	}
 
 }

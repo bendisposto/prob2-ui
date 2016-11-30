@@ -102,7 +102,7 @@ public final class PreferencesStage extends Stage {
 		this.recentFiles = recentFiles;
 		this.stageManager = stageManager;
 
-		stageManager.loadFXML(this, "preferences_stage.fxml");
+		stageManager.loadFXML(this, "preferences_stage.fxml", this.getClass().getName());
 	}
 
 	@FXML

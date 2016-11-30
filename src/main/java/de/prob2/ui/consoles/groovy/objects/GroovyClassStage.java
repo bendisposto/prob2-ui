@@ -62,7 +62,7 @@ public class GroovyClassStage extends Stage {
 	private ObservableList<CollectionDataItem> collectionData = FXCollections.observableArrayList();
 
 	public GroovyClassStage(final StageManager stageManager) {
-		stageManager.loadFXML(this, "groovy_class_stage.fxml");
+		stageManager.loadFXML(this, "groovy_class_stage.fxml", null);
 	}
 	
 	public void setClass(Class<?> clazz) {

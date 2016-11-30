@@ -59,7 +59,7 @@ public class FullValueStage extends Stage {
 	
 	@Inject
 	public FullValueStage(final StageManager stageManager) {
-		stageManager.loadFXML(this, "full_value_stage.fxml");
+		stageManager.loadFXML(this, "full_value_stage.fxml", null);
 	}
 	
 	private static String prettify(final String s) {
