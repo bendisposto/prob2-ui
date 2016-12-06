@@ -18,10 +18,10 @@
 		<SplitPane dividerPositions="0.26,0.8">
 			<Accordion>
 				<panes>
-					<TitledPane text="%tptitles.operations">
+					<TitledPane fx:id="operationsTP" text="%tptitles.operations">
 						<OperationsView/>
 					</TitledPane>
-					<TitledPane text="%tptitles.modelcheck">
+					<TitledPane fx:id="modelcheckTP" text="%tptitles.modelcheck">
 						<ModelcheckingController/>
 					</TitledPane>
 				</panes>
@@ -32,10 +32,10 @@
 			</SplitPane>
 			<Accordion>
 				<panes>
-					<TitledPane text="%tptitles.history">
+					<TitledPane fx:id="historyTP" text="%tptitles.history">
 						<HistoryView/>
 					</TitledPane>
-					<TitledPane text="%tptitles.stats">
+					<TitledPane fx:id="statsTP" text="%tptitles.stats">
 						<StatsView/>
 					</TitledPane>
 				</panes>

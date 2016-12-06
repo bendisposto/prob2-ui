@@ -24,7 +24,8 @@ public class UIPersistence {
 		this.injector = injector;
 	}
 	
-	private void restoreStage(final String id) {
+	private void restoreStage(final String id, final MenuController menuController) {
+		LOGGER.info("Restoring stage with ID {}", id);
 		if (id == null) {
 			LOGGER.warn("Stage identifier is null, cannot restore window");
 			return;
@@ -37,6 +38,14 @@ public class UIPersistence {
 			
 			case "de.prob2.ui.menu.MenuController$DetachViewStageController":
 				injector.getInstance(MenuController.class).handleLoadDetached();
+				return;
+			
+			case "de.prob2.ui.operations.OperationsView":
+			case "de.prob2.ui.history.HistoryView":
+			case "de.prob2.ui.modelchecking.ModelcheckingController":
+			case "de.prob2.ui.stats.StatsView":
+			case "de.prob2.ui.animations.AnimationsView":
+				menuController.detach(id);
 				return;
 			
 			default:
@@ -68,12 +77,9 @@ public class UIPersistence {
 	
 	public void open() {
 		MenuController menu = injector.getInstance(MenuController.class);
-		if ("detached".equals(uiState.getGuiState())) {
-			menu.applyDetached();
-		} else {
-			menu.loadPreset(uiState.getGuiState());
+		menu.loadPreset(uiState.getGuiState());
+		for (final String id : uiState.getStages()) {
+			this.restoreStage(id, menu);
 		}
-		
-		uiState.getStages().forEach(this::restoreStage);
 	}
 }

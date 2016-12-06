@@ -5,10 +5,9 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.prefs.Preferences;
 
 import com.google.inject.Inject;
@@ -45,15 +44,13 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Accordion;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.SplitPane;
 import javafx.scene.control.TitledPane;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.web.WebEngine;
@@ -68,132 +65,73 @@ import org.slf4j.LoggerFactory;
 
 @Singleton
 public final class MenuController extends MenuBar {
-	
-	private enum ApplyDetachedEnum {
-		JSON, USER
-	}
-	
 	private final class DetachViewStageController extends Stage {
-		@FXML private Button apply;
 		@FXML private CheckBox detachOperations;
 		@FXML private CheckBox detachHistory;
 		@FXML private CheckBox detachModelcheck;
 		@FXML private CheckBox detachStats;
 		@FXML private CheckBox detachAnimations;
 		private final Preferences windowPrefs;
-		private final Set<Stage> wrapperStages;
+		private final Map<CheckBox, Class<? extends Parent>> checkBoxMap;
+		private final Map<Class<? extends Parent>, CheckBox> checkBoxMapReverse;
+		private List<TitledPane> panes;
+		private List<Parent> detachables;
 		
 		private DetachViewStageController() {
-			windowPrefs = Preferences.userNodeForPackage(MenuController.DetachViewStageController.class);
-			wrapperStages = new HashSet<>();
+			windowPrefs = Preferences.userNodeForPackage(DetachViewStageController.class);
+			checkBoxMap = new HashMap<>();
+			checkBoxMapReverse = new HashMap<>();
 			stageManager.loadFXML(this, "detachedPerspectivesChoice.fxml", this.getClass().getName());
 		}
 
 		@FXML
-		private void apply() {
-			apply(ApplyDetachedEnum.USER);
+		public void initialize() {
+			checkBoxMap.put(detachOperations, OperationsView.class);
+			checkBoxMap.put(detachHistory, HistoryView.class);
+			checkBoxMap.put(detachModelcheck, ModelcheckingController.class);
+			checkBoxMap.put(detachStats, StatsView.class);
+			checkBoxMap.put(detachAnimations, AnimationsView.class);
+			for (final Map.Entry<CheckBox, Class<? extends Parent>> entry : checkBoxMap.entrySet()) {
+				checkBoxMapReverse.put(entry.getValue(), entry.getKey());
+			}
 		}
 		
-		private void apply(ApplyDetachedEnum detachedBy) {
-			Parent root = loadPreset("main.fxml");
-			assert root != null;
-			SplitPane pane = (SplitPane) root.getChildrenUnmodifiable().get(0);
-			Accordion accordion = (Accordion) pane.getItems().get(0);
-			removeTP(accordion, pane, detachedBy);
-			uiState.setGuiState("detached");
-			this.hide();
+		private void updateDetachables(final List<TitledPane> detachablePanes) {
+			panes = new ArrayList<>(detachablePanes);
+			detachables = new ArrayList<>();
+			for (final TitledPane pane : panes) {
+				detachables.add((Parent)pane.getContent());
+			}
 		}
 		
-		private void removeTP(Accordion accordion, SplitPane pane, ApplyDetachedEnum detachedBy) {
-			final HashSet<Stage> wrapperStagesCopy = new HashSet<>(wrapperStages);
-			wrapperStages.clear();
-			for (final Stage stage : wrapperStagesCopy) {
-				stage.setScene(null);
-				stage.hide();
-				uiState.getStages().remove(stage.getTitle());
+		@FXML
+		private void checkboxHandler(ActionEvent event) {
+			final CheckBox s = (CheckBox)event.getSource();
+			final Class<? extends Parent> clazz = checkBoxMap.get(s);
+			
+			for (int i = 0; i < panes.size(); i++) {
+				final TitledPane tp = panes.get(i);
+				final Parent detachable = detachables.get(i);
+				if (clazz.isInstance(detachable)) {
+					if (s.isSelected()) {
+						transferToNewWindow(tp, tp.getText(), clazz.getName());
+					} else {
+						detachable.getScene().getWindow().hide();
+					}
+					return;
+				}
 			}
 			
-			for (final Iterator<TitledPane> it = accordion.getPanes().iterator(); it.hasNext();) {
-				final TitledPane tp = it.next();
-				if (removable(tp, detachedBy)) {
-					it.remove();
-					transferToNewWindow((Parent)tp.getContent(), tp.getText());
-				}
-			}
-			
-			if (accordion.getPanes().isEmpty()) {
-				pane.getItems().remove(accordion);
-				pane.setDividerPositions(0);
-				pane.lookupAll(".split-pane-divider").forEach(div -> div.setMouseTransparent(true));
-			}
+			throw new IllegalStateException("Didn't find " + clazz + " in any of the panes");
 		}
 		
-		private boolean removable(TitledPane tp, ApplyDetachedEnum detachedBy) {
-			return	removableOperations(tp, detachedBy) ||
-					removableHistory(tp, detachedBy) ||
-					removableModelcheck(tp, detachedBy) ||
-					removableStats(tp, detachedBy) ||
-					removableAnimations(tp, detachedBy);
-		}
-
-		private boolean removableOperations(TitledPane tp, ApplyDetachedEnum detachedBy) {
-			boolean condition = detachOperations.isSelected();
-			if(detachedBy == ApplyDetachedEnum.JSON) {
-				condition = uiState.getStages().contains(tp.getText());
-				if(condition) {
-					detachOperations.setSelected(true);
-				}
-			}
-			return tp.getContent() instanceof OperationsView && condition;
-		}
-
-		private boolean removableHistory(TitledPane tp, ApplyDetachedEnum detachedBy) {
-			boolean condition = detachHistory.isSelected();
-			if(detachedBy == ApplyDetachedEnum.JSON) {
-				condition = uiState.getStages().contains(tp.getText());
-				if(condition) {
-					detachHistory.setSelected(true);
-				}
-			}
-			return tp.getContent() instanceof HistoryView && condition;
-		}
-
-		private boolean removableModelcheck(TitledPane tp, ApplyDetachedEnum detachedBy) {
-			boolean condition = detachModelcheck.isSelected();
-			if(detachedBy == ApplyDetachedEnum.JSON) {
-				condition = uiState.getStages().contains(tp.getText());
-				if(condition) {
-					detachModelcheck.setSelected(true);
-				}
-			}
-			return tp.getContent() instanceof ModelcheckingController && condition;
-		}
-
-		private boolean removableStats(TitledPane tp, ApplyDetachedEnum detachedBy) {
-			boolean condition = detachStats.isSelected();
-			if(detachedBy == ApplyDetachedEnum.JSON) {
-				condition = uiState.getStages().contains(tp.getText());
-				if(condition) {
-					detachStats.setSelected(true);
-				}
-			}
-			return tp.getContent() instanceof StatsView && condition;
-		}
-
-		private boolean removableAnimations(TitledPane tp, ApplyDetachedEnum detachedBy) {
-			boolean condition = detachAnimations.isSelected();
-			if(detachedBy == ApplyDetachedEnum.JSON) {
-				condition = uiState.getStages().contains(tp.getText());
-				if(condition) {
-					detachAnimations.setSelected(true);
-				}
-			}
-			return tp.getContent() instanceof AnimationsView && condition;
-		}
-
-		private void transferToNewWindow(Parent node, String title) {
+		private Stage transferToNewWindow(TitledPane tp, String title, String id) {
+			Parent node = (Parent)tp.getContent();
+			// TODO Remove the TitledPane from the accordion and don't just hide it
+			tp.setVisible(false);
+			tp.setContent(new Label("I should be invisible.\n(this pane is detached)"));
+			
 			Stage stage = new Stage();
-			wrapperStages.add(stage);
 			stage.setTitle(title);
 			stage.showingProperty().addListener((observable, from, to) -> {
 				if (!to) {
@@ -201,19 +139,10 @@ public final class MenuController extends MenuBar {
 					windowPrefs.putDouble(node.getClass()+"Y",stage.getY());
 					windowPrefs.putDouble(node.getClass()+"Width",stage.getWidth());
 					windowPrefs.putDouble(node.getClass()+"Height",stage.getHeight());
-					if (node instanceof OperationsView) {
-						detachOperations.setSelected(false);
-					} else if (node instanceof HistoryView) {
-						detachHistory.setSelected(false);
-					} else if (node instanceof ModelcheckingController) {
-						detachModelcheck.setSelected(false);
-					} else if (node instanceof StatsView) {
-						detachStats.setSelected(false);
-					} else if (node instanceof AnimationsView) {
-						detachAnimations.setSelected(false);
-					}
-					uiState.getStages().remove(stage.getTitle());
-					dvController.apply();
+					checkBoxMapReverse.get(node.getClass()).setSelected(false);
+					node.getScene().setRoot(new Label("I should be invisible.\n(this stage is closed)"));
+					tp.setContent(node);
+					tp.setVisible(true);
 				}
 			});
 			stage.setWidth(windowPrefs.getDouble(node.getClass()+"Width",200));
@@ -221,10 +150,10 @@ public final class MenuController extends MenuBar {
 			stage.setX(windowPrefs.getDouble(node.getClass()+"X", Screen.getPrimary().getVisualBounds().getWidth()-stage.getWidth()/2));
 			stage.setY(windowPrefs.getDouble(node.getClass()+"Y", Screen.getPrimary().getVisualBounds().getHeight()-stage.getHeight()/2));
 			
-			Scene scene = new Scene(node);
-			stage.setScene(scene);
-			stageManager.register(stage, this.getClass().getName());
+			stage.setScene(new Scene(node));
+			stageManager.register(stage, id);
 			stage.show();
+			return stage;
 		}
 	}
 	private static final URL FXML_ROOT;
@@ -384,10 +313,6 @@ public final class MenuController extends MenuBar {
 		this.dvController.toFront();
 	}
 	
-	public void applyDetached() {
-		this.dvController.apply(ApplyDetachedEnum.JSON);
-	}
-
 	@FXML
 	private void handleLoadPerspective() {
 		FileChooser fileChooser = new FileChooser();
@@ -489,6 +414,28 @@ public final class MenuController extends MenuBar {
 		bConsoleStage.show();
 		bConsoleStage.toFront();
 	}
+	
+	public void detach(String id) {
+		switch (id) {
+			case "de.prob2.ui.operations.OperationsView":
+				dvController.detachOperations.fire();
+				break;
+			case "de.prob2.ui.history.HistoryView":
+				dvController.detachHistory.fire();
+				break;
+			case "de.prob2.ui.modelchecking.ModelcheckingController":
+				dvController.detachModelcheck.fire();
+				break;
+			case "de.prob2.ui.stats.StatsView":
+				dvController.detachStats.fire();
+				break;
+			case "de.prob2.ui.animations.AnimationsView":
+				dvController.detachAnimations.fire();
+				break;
+			default:
+				throw new IllegalArgumentException("Don't know how to detach " + id);
+		}
+	}
 
 	public Parent loadPreset(String location) {
 		FXMLLoader loader = injector.getInstance(FXMLLoader.class);
@@ -500,7 +447,25 @@ public final class MenuController extends MenuBar {
 			stageManager.makeAlert(Alert.AlertType.ERROR, "Malformed location:\n" + e).showAndWait();
 			return null;
 		}
-		Parent root;
+		
+		final Parent root;
+		final List<TitledPane> panes = new ArrayList<>();
+		loader.setController(new Object() {
+			@FXML private TitledPane operationsTP;
+			@FXML private TitledPane historyTP;
+			@FXML private TitledPane modelcheckTP;
+			@FXML private TitledPane statsTP;
+			@FXML private TitledPane animationsTP;
+			
+			@FXML
+			public void initialize() {
+				panes.add(operationsTP);
+				panes.add(historyTP);
+				panes.add(modelcheckTP);
+				panes.add(statsTP);
+				panes.add(animationsTP);
+			}
+		});
 		try {
 			root = loader.load();
 		} catch (IOException e) {
@@ -509,6 +474,7 @@ public final class MenuController extends MenuBar {
 			return null;
 		}
 		window.getScene().setRoot(root);
+		dvController.updateDetachables(panes);
 		
 		if (System.getProperty("os.name", "").toLowerCase().contains("mac")) {
 			final MenuToolkit tk = MenuToolkit.toolkit();
