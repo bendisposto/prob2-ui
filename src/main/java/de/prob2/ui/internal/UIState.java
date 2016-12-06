@@ -1,5 +1,6 @@
 package de.prob2.ui.internal;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -13,6 +14,9 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class UIState {
 	private static final Logger LOGGER = LoggerFactory.getLogger(UIState.class);
+	
+	private static final String[] DETACHED_VALUES = new String[]{"History", "Operations", "Model Check", "Statistics", "Animations"};
+	private static final Set<String> DETACHED = new HashSet<>(Arrays.asList(DETACHED_VALUES));
 	
 	private String guiState;
 	
@@ -44,6 +48,15 @@ public class UIState {
 	
 	public Set<String> getStages() {
 		return stages;
+	}
+	
+	public void clearDetachedStages() {
+		HashSet<String> set = new HashSet<>(stages);
+		for(String stage : set) {
+			if(DETACHED.contains(stage)) {
+				stages.remove(stage);
+			}
+		}
 	}
 
 }

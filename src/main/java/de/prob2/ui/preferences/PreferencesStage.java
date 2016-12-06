@@ -31,6 +31,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
@@ -80,12 +82,17 @@ public final class PreferencesStage extends Stage {
 	@FXML private TreeTableColumn<PrefTreeItem, String> tvDefaultValue;
 	@FXML private TreeTableColumn<PrefTreeItem, String> tvDescription;
 	@FXML private ListView<Class<? extends AbstractElement>> blacklistView;
+	@FXML private TabPane tabPane;
+	@FXML private Tab tabGeneral;
+	@FXML private Tab tabPreferences;
+	@FXML private Tab tabStatesView;
 
 	private final ClassBlacklist classBlacklist;
 	private final CurrentTrace currentTrace;
 	private final ProBPreferences preferences;
 	private final RecentFiles recentFiles;
 	private final StageManager stageManager;
+	private String currentTab;
 
 	@Inject
 	private PreferencesStage(
@@ -101,6 +108,7 @@ public final class PreferencesStage extends Stage {
 		this.preferences.setStateSpace(currentTrace.exists() ? currentTrace.getStateSpace() : null);
 		this.recentFiles = recentFiles;
 		this.stageManager = stageManager;
+		this.currentTab = "General";
 
 		stageManager.loadFXML(this, "preferences_stage.fxml", this.getClass().getName());
 	}
@@ -207,6 +215,9 @@ public final class PreferencesStage extends Stage {
 						items.remove(removed);
 					}
 				});
+		this.tabGeneral.setOnSelectionChanged(e-> currentTab = tabGeneral.getText());
+		this.tabPreferences.setOnSelectionChanged(e-> currentTab = tabPreferences.getText());
+		this.tabStatesView.setOnSelectionChanged(e-> currentTab = tabStatesView.getText());
 	}
 
 	private void updatePreferences() {
@@ -304,5 +315,25 @@ public final class PreferencesStage extends Stage {
 			stageManager.makeAlert(Alert.AlertType.ERROR, "Failed to apply preference changes:\n" + e).showAndWait();
 			return false;
 		}
+	}
+	
+	public String getCurrentTab() {
+		return currentTab;
+	}
+	
+	public void setCurrentTab(String tab) {
+		this.currentTab = tab;
+	}
+	
+	public void selectGeneral() {
+		tabPane.getSelectionModel().select(tabGeneral);
+	}
+	
+	public void selectPreferences() {
+		tabPane.getSelectionModel().select(tabPreferences);
+	}
+	
+	public void selectStatesView() {
+		tabPane.getSelectionModel().select(tabStatesView);
 	}
 }

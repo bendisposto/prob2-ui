@@ -13,7 +13,6 @@ import de.prob2.ui.internal.UIState;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -32,12 +31,10 @@ public class ProB2 extends Application {
 		injector = Guice.createInjector(com.google.inject.Stage.PRODUCTION, module);
 		config = injector.getInstance(Config.class);
 		UIState uiState = injector.getInstance(UIState.class);
-		FXMLLoader loader = injector.getInstance(FXMLLoader.class);
-		loader.setLocation(getClass().getResource("main.fxml"));
-		loader.load();
-		Parent root = loader.getRoot();
-
+		UIPersistence uiPersistence = new UIPersistence(uiState, injector);
+		Parent root = injector.getInstance(MainController.class);
 		Scene mainScene = new Scene(root, 1024, 768);
+		mainScene.getStylesheets().add("prob.css");
 		stage.setTitle("ProB 2.0");
 		stage.setScene(mainScene);
 		stage.setOnHidden(e -> Platform.exit());
@@ -45,7 +42,7 @@ public class ProB2 extends Application {
 		// No persistence needed for the main stage, because it is created automatically
 		injector.getInstance(StageManager.class).register(stage, null);
 		stage.show();
-		new UIPersistence(uiState, injector).open();
+		uiPersistence.open();
 	}
 	
 	@Override

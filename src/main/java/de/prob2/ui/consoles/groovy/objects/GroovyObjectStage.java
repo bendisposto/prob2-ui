@@ -1,5 +1,7 @@
 package de.prob2.ui.consoles.groovy.objects;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import javax.script.Bindings;
@@ -33,7 +35,7 @@ public final class GroovyObjectStage extends Stage {
 
 	private ObservableList<GroovyObjectItem> items = FXCollections.observableArrayList();
 	
-	private StageManager stageManager;
+	private final StageManager stageManager;
 
 	@Inject
 	private GroovyObjectStage(StageManager stageManager) {
@@ -80,6 +82,10 @@ public final class GroovyObjectStage extends Stage {
 			}
 			tvObjects.getSelectionModel().clearSelection();
 		});
+	}
+	
+	public List<GroovyObjectItem> getItems() {
+		return items;
 	}
 
 }
