@@ -26,8 +26,13 @@ import javafx.scene.control.TitledPane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Singleton
 public final class DetachViewStage extends Stage {
+	private static final Logger LOGGER = LoggerFactory.getLogger(DetachViewStage.class);
+	
 	@FXML private CheckBox detachOperations;
 	@FXML private CheckBox detachHistory;
 	@FXML private CheckBox detachModelcheck;
@@ -63,25 +68,23 @@ public final class DetachViewStage extends Stage {
 	}
 	
 	public void detach(String id) {
-		switch (id) {
-			case "de.prob2.ui.operations.OperationsView":
-				this.detachOperations.fire();
-				break;
-			case "de.prob2.ui.history.HistoryView":
-				this.detachHistory.fire();
-				break;
-			case "de.prob2.ui.modelchecking.ModelcheckingController":
-				this.detachModelcheck.fire();
-				break;
-			case "de.prob2.ui.stats.StatsView":
-				this.detachStats.fire();
-				break;
-			case "de.prob2.ui.animations.AnimationsView":
-				this.detachAnimations.fire();
-				break;
-			default:
-				throw new IllegalArgumentException("Don't know how to detach " + id);
+		final Class<? extends Parent> clazz;
+		try {
+			clazz = Class.forName(id).asSubclass(Parent.class);
+		} catch (ClassNotFoundException e) {
+			LOGGER.warn("Class not found for id, cannot detach", e);
+			return;
+		} catch (ClassCastException e) {
+			LOGGER.warn("Class is not a Parent subclass, cannot detach", e);
+			return;
 		}
+		
+		final CheckBox checkBox = checkBoxMapReverse.get(clazz);
+		if (checkBox == null) {
+			LOGGER.warn("No checkbox found for {}, cannot detach", clazz);
+			return;
+		}
+		checkBox.fire();
 	}
 	
 	public void updateDetachables(final List<TitledPane> detachablePanes) {
