@@ -11,7 +11,6 @@ import de.prob2.ui.consoles.groovy.objects.GroovyObjectItem;
 import de.prob2.ui.consoles.groovy.objects.GroovyObjectStage;
 import de.prob2.ui.menu.DetachViewStage;
 import de.prob2.ui.menu.MenuController;
-import de.prob2.ui.preferences.PreferencesStage;
 
 import javafx.stage.Stage;
 
@@ -86,17 +85,6 @@ public final class UIPersistence {
 			if(uiState.getStages().contains(item.getClazzname())) {
 				item.show();
 			}
-		}
-		PreferencesStage preferencesStage = injector.getInstance(PreferencesStage.class);
-		switch(preferencesStage.getCurrentTab()) {
-			case "ProB Preferences":
-				preferencesStage.selectPreferences();
-				break;
-			case "States View":
-				preferencesStage.selectStatesView();
-				break;
-			default:
-				preferencesStage.selectGeneral();
 		}
 	}
 	

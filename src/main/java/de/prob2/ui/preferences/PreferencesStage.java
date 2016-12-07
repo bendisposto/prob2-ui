@@ -22,6 +22,8 @@ import de.prob2.ui.states.ClassBlacklist;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.fxml.FXML;
@@ -92,7 +94,7 @@ public final class PreferencesStage extends Stage {
 	private final ProBPreferences preferences;
 	private final RecentFiles recentFiles;
 	private final StageManager stageManager;
-	private String currentTab;
+	private final StringProperty currentTab;
 
 	@Inject
 	private PreferencesStage(
@@ -108,7 +110,7 @@ public final class PreferencesStage extends Stage {
 		this.preferences.setStateSpace(currentTrace.exists() ? currentTrace.getStateSpace() : null);
 		this.recentFiles = recentFiles;
 		this.stageManager = stageManager;
-		this.currentTab = "General";
+		this.currentTab = new SimpleStringProperty(this, "currentTab", null);
 
 		stageManager.loadFXML(this, "preferences_stage.fxml", this.getClass().getName());
 	}
@@ -215,9 +217,27 @@ public final class PreferencesStage extends Stage {
 						items.remove(removed);
 					}
 				});
-		this.tabGeneral.setOnSelectionChanged(e-> currentTab = tabGeneral.getText());
-		this.tabPreferences.setOnSelectionChanged(e-> currentTab = tabPreferences.getText());
-		this.tabStatesView.setOnSelectionChanged(e-> currentTab = tabStatesView.getText());
+		
+		this.currentTabProperty().addListener((observable, from, to) -> {
+			switch (to) {
+				case "general":
+					this.tabPane.getSelectionModel().select(this.tabGeneral);
+					break;
+				
+				case "preferences":
+					this.tabPane.getSelectionModel().select(this.tabPreferences);
+					break;
+				
+				case "statesView":
+					this.tabPane.getSelectionModel().select(this.tabStatesView);
+					break;
+				
+				default:
+					logger.warn("Attempted to select unknown preferences tab: {}", to);
+			}
+		});
+		this.tabPane.getSelectionModel().selectedItemProperty().addListener((observable, from, to) -> this.setCurrentTab(to.getId()));
+		this.setCurrentTab(this.tabPane.getSelectionModel().getSelectedItem().getId());
 	}
 
 	private void updatePreferences() {
@@ -317,23 +337,15 @@ public final class PreferencesStage extends Stage {
 		}
 	}
 	
+	public StringProperty currentTabProperty() {
+		return this.currentTab;
+	}
+	
 	public String getCurrentTab() {
-		return currentTab;
+		return this.currentTabProperty().get();
 	}
 	
 	public void setCurrentTab(String tab) {
-		this.currentTab = tab;
-	}
-	
-	public void selectGeneral() {
-		tabPane.getSelectionModel().select(tabGeneral);
-	}
-	
-	public void selectPreferences() {
-		tabPane.getSelectionModel().select(tabPreferences);
-	}
-	
-	public void selectStatesView() {
-		tabPane.getSelectionModel().select(tabStatesView);
+		this.currentTabProperty().set(tab);
 	}
 }
