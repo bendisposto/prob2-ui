@@ -44,10 +44,6 @@ public final class UIPersistence {
 				injector.getInstance(GroovyInterpreter.class).exec(new ConsoleInstruction("inspect", ConsoleInstructionOption.ENTER));
 				return;
 			
-			case "de.prob2.ui.menu.MenuController$DetachViewStageController":
-				injector.getInstance(MenuController.class).handleLoadDetached();
-				return;
-			
 			case "de.prob2.ui.operations.OperationsView":
 			case "de.prob2.ui.history.HistoryView":
 			case "de.prob2.ui.modelchecking.ModelcheckingController":
