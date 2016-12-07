@@ -5,10 +5,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.prefs.Preferences;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -24,18 +21,14 @@ import de.prob.statespace.StateSpace;
 import de.prob.statespace.Trace;
 
 import de.prob2.ui.MainController;
-import de.prob2.ui.animations.AnimationsView;
 import de.prob2.ui.consoles.b.BConsoleStage;
 import de.prob2.ui.consoles.groovy.GroovyConsoleStage;
 import de.prob2.ui.formula.FormulaInputStage;
-import de.prob2.ui.history.HistoryView;
 import de.prob2.ui.internal.StageManager;
 import de.prob2.ui.internal.UIState;
 import de.prob2.ui.modelchecking.ModelcheckingController;
-import de.prob2.ui.operations.OperationsView;
 import de.prob2.ui.preferences.PreferencesStage;
 import de.prob2.ui.prob2fx.CurrentTrace;
-import de.prob2.ui.stats.StatsView;
 
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
@@ -44,10 +37,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
@@ -55,7 +45,6 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TitledPane;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.FileChooser;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
@@ -64,97 +53,6 @@ import org.slf4j.LoggerFactory;
 
 @Singleton
 public final class MenuController extends MenuBar {
-	private final class DetachViewStageController extends Stage {
-		@FXML private CheckBox detachOperations;
-		@FXML private CheckBox detachHistory;
-		@FXML private CheckBox detachModelcheck;
-		@FXML private CheckBox detachStats;
-		@FXML private CheckBox detachAnimations;
-		private final Preferences windowPrefs;
-		private final Map<CheckBox, Class<? extends Parent>> checkBoxMap;
-		private final Map<Class<? extends Parent>, CheckBox> checkBoxMapReverse;
-		private List<TitledPane> panes;
-		private List<Parent> detachables;
-		
-		private DetachViewStageController() {
-			windowPrefs = Preferences.userNodeForPackage(MenuController.DetachViewStageController.class);
-			checkBoxMap = new HashMap<>();
-			checkBoxMapReverse = new HashMap<>();
-			stageManager.loadFXML(this, "detachedPerspectivesChoice.fxml", this.getClass().getName());
-		}
-
-		@FXML
-		public void initialize() {
-			checkBoxMap.put(detachOperations, OperationsView.class);
-			checkBoxMap.put(detachHistory, HistoryView.class);
-			checkBoxMap.put(detachModelcheck, ModelcheckingController.class);
-			checkBoxMap.put(detachStats, StatsView.class);
-			checkBoxMap.put(detachAnimations, AnimationsView.class);
-			for (final Map.Entry<CheckBox, Class<? extends Parent>> entry : checkBoxMap.entrySet()) {
-				checkBoxMapReverse.put(entry.getValue(), entry.getKey());
-			}
-		}
-		
-		private void updateDetachables(final List<TitledPane> detachablePanes) {
-			panes = new ArrayList<>(detachablePanes);
-			detachables = new ArrayList<>();
-			for (final TitledPane pane : panes) {
-				detachables.add((Parent)pane.getContent());
-			}
-		}
-
-		@FXML
-		private void checkboxHandler(ActionEvent event) {
-			final CheckBox s = (CheckBox)event.getSource();
-			final Class<? extends Parent> clazz = checkBoxMap.get(s);
-			
-			for (int i = 0; i < panes.size(); i++) {
-				final TitledPane tp = panes.get(i);
-				final Parent detachable = detachables.get(i);
-				if (clazz.isInstance(detachable)) {
-					if (s.isSelected()) {
-						transferToNewWindow(tp, tp.getText(), clazz.getName());
-					} else {
-						detachable.getScene().getWindow().hide();
-					}
-					return;
-				}
-			}
-			
-			throw new IllegalStateException("Didn't find " + clazz + " in any of the panes");
-		}
-		
-		private Stage transferToNewWindow(TitledPane tp, String title, String id) {
-			Parent node = (Parent)tp.getContent();
-			// TODO Remove the TitledPane from the accordion and don't just hide it
-			tp.setVisible(false);
-			tp.setContent(new Label("I should be invisible.\n(this pane is detached)"));
-			
-			Stage stage = new Stage();
-			stage.setTitle(title);
-			stage.showingProperty().addListener((observable, from, to) -> {
-				if (!to) {
-					windowPrefs.putDouble(node.getClass()+"X",stage.getX());
-					windowPrefs.putDouble(node.getClass()+"Y",stage.getY());
-					windowPrefs.putDouble(node.getClass()+"Width",stage.getWidth());
-					windowPrefs.putDouble(node.getClass()+"Height",stage.getHeight());
-					checkBoxMapReverse.get(node.getClass()).setSelected(false);
-					node.getScene().setRoot(new Label("I should be invisible.\n(this stage is closed)"));
-					tp.setContent(node);
-					tp.setVisible(true);
-				}
-			});
-			stage.setWidth(windowPrefs.getDouble(node.getClass()+"Width",200));
-			stage.setHeight(windowPrefs.getDouble(node.getClass()+"Height",100));
-			stage.setX(windowPrefs.getDouble(node.getClass()+"X", Screen.getPrimary().getVisualBounds().getWidth()-stage.getWidth()/2));
-			stage.setY(windowPrefs.getDouble(node.getClass()+"Y", Screen.getPrimary().getVisualBounds().getHeight()-stage.getHeight()/2));
-			
-			stage.setScene(new Scene(node));
-			stageManager.register(stage, id);
-			stage.show();
-			return stage;
-		}
-	}
 	private static final URL FXML_ROOT;
 	
 	static {
@@ -171,10 +69,10 @@ public final class MenuController extends MenuBar {
 	private final Api api;
 	private final AnimationSelector animationSelector;
 	private final CurrentTrace currentTrace;
+	private final DetachViewStage dvController;
 	private final RecentFiles recentFiles;
 	private final StageManager stageManager;
 	private final UIState uiState;
-	private final DetachViewStageController dvController;
 	
 	private final Object openLock;
 	private Window window;
@@ -193,6 +91,7 @@ public final class MenuController extends MenuBar {
 		final Api api,
 		final AnimationSelector animationSelector,
 		final CurrentTrace currentTrace,
+		final DetachViewStage dvController,
 		final RecentFiles recentFiles,
 		final StageManager stageManager,
 		final UIState uiState
@@ -201,6 +100,7 @@ public final class MenuController extends MenuBar {
 		this.api = api;
 		this.animationSelector = animationSelector;
 		this.currentTrace = currentTrace;
+		this.dvController = dvController;
 		this.recentFiles = recentFiles;
 		this.stageManager = stageManager;
 		this.uiState = uiState;
@@ -239,8 +139,6 @@ public final class MenuController extends MenuBar {
 			// Make this the global menu bar
 			tk.setGlobalMenuBar(this);
 		}
-
-		this.dvController = this.new DetachViewStageController();
 	}
 	
 	@FXML
@@ -412,28 +310,6 @@ public final class MenuController extends MenuBar {
 		final Stage bConsoleStage = injector.getInstance(BConsoleStage.class);
 		bConsoleStage.show();
 		bConsoleStage.toFront();
-	}
-	
-	public void detach(String id) {
-		switch (id) {
-			case "de.prob2.ui.operations.OperationsView":
-				dvController.detachOperations.fire();
-				break;
-			case "de.prob2.ui.history.HistoryView":
-				dvController.detachHistory.fire();
-				break;
-			case "de.prob2.ui.modelchecking.ModelcheckingController":
-				dvController.detachModelcheck.fire();
-				break;
-			case "de.prob2.ui.stats.StatsView":
-				dvController.detachStats.fire();
-				break;
-			case "de.prob2.ui.animations.AnimationsView":
-				dvController.detachAnimations.fire();
-				break;
-			default:
-				throw new IllegalArgumentException("Don't know how to detach " + id);
-		}
 	}
 
 	public Parent loadPreset(String location) {

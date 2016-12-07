@@ -7,6 +7,7 @@ import de.prob2.ui.consoles.ConsoleInstructionOption;
 import de.prob2.ui.consoles.groovy.GroovyInterpreter;
 import de.prob2.ui.consoles.groovy.objects.GroovyObjectItem;
 import de.prob2.ui.consoles.groovy.objects.GroovyObjectStage;
+import de.prob2.ui.menu.DetachViewStage;
 import de.prob2.ui.menu.MenuController;
 import de.prob2.ui.preferences.PreferencesStage;
 
@@ -17,17 +18,18 @@ import org.slf4j.LoggerFactory;
 
 public class UIPersistence {
 	private static final Logger LOGGER = LoggerFactory.getLogger(UIPersistence.class);
-
-	private UIState uiState;
 	
-	private Injector injector;
+	private final DetachViewStage detachViewStage;
+	private final UIState uiState;
+	private final Injector injector;
 	
-	public UIPersistence(UIState uiState, Injector injector) {
-		this.uiState = uiState;
+	public UIPersistence(final Injector injector) {
+		this.detachViewStage = injector.getInstance(DetachViewStage.class);
+		this.uiState = injector.getInstance(UIState.class);
 		this.injector = injector;
 	}
 	
-	private void restoreStage(final String id, final MenuController menuController) {
+	private void restoreStage(final String id) {
 		LOGGER.info("Restoring stage with ID {}", id);
 		if (id == null) {
 			LOGGER.warn("Stage identifier is null, cannot restore window");
@@ -48,7 +50,7 @@ public class UIPersistence {
 			case "de.prob2.ui.modelchecking.ModelcheckingController":
 			case "de.prob2.ui.stats.StatsView":
 			case "de.prob2.ui.animations.AnimationsView":
-				menuController.detach(id);
+				detachViewStage.detach(id);
 				return;
 			
 			default:
@@ -95,10 +97,9 @@ public class UIPersistence {
 	}
 	
 	public void open() {
-		MenuController menu = injector.getInstance(MenuController.class);
-		menu.loadPreset(uiState.getGuiState());
+		injector.getInstance(MenuController.class).loadPreset(uiState.getGuiState());
 		for (final String id : uiState.getStages()) {
-			this.restoreStage(id, menu);
+			this.restoreStage(id);
 		}
 	}
 }
