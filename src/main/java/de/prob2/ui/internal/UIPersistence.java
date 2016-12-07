@@ -1,6 +1,8 @@
 package de.prob2.ui.internal;
 
+import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Singleton;
 
 import de.prob2.ui.consoles.ConsoleInstruction;
 import de.prob2.ui.consoles.ConsoleInstructionOption;
@@ -16,16 +18,18 @@ import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UIPersistence {
+@Singleton
+public final class UIPersistence {
 	private static final Logger LOGGER = LoggerFactory.getLogger(UIPersistence.class);
 	
 	private final DetachViewStage detachViewStage;
 	private final UIState uiState;
 	private final Injector injector;
 	
-	public UIPersistence(final Injector injector) {
-		this.detachViewStage = injector.getInstance(DetachViewStage.class);
-		this.uiState = injector.getInstance(UIState.class);
+	@Inject
+	private UIPersistence(final DetachViewStage detachViewStage, final UIState uiState, final Injector injector) {
+		this.detachViewStage = detachViewStage;
+		this.uiState = uiState;
 		this.injector = injector;
 	}
 	

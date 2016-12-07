@@ -39,7 +39,7 @@ public class ProB2 extends Application {
 		// No persistence needed for the main stage, because it is created automatically
 		injector.getInstance(StageManager.class).register(stage, null);
 		stage.show();
-		new UIPersistence(injector).open();
+		injector.getInstance(UIPersistence.class).open();
 	}
 	
 	@Override
