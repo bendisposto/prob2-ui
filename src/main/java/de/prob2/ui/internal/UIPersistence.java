@@ -76,9 +76,6 @@ public class UIPersistence {
 		} catch (RuntimeException e) {
 			LOGGER.warn("Failed to restore window", e);
 		}
-		if(uiState.getStages().contains("Report Bug")) {
-			menu.handleReportBug();
-		}
 		for (GroovyObjectItem item: injector.getInstance(GroovyObjectStage.class).getItems()) {
 			if(uiState.getStages().contains(item.getClazzname())) {
 				item.show();
