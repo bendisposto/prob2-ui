@@ -28,7 +28,6 @@ import de.prob.model.representation.Machine;
 import de.prob.statespace.Trace;
 import de.prob.statespace.Transition;
 
-import de.prob2.ui.internal.IComponents;
 import de.prob2.ui.internal.StageManager;
 import de.prob2.ui.prob2fx.CurrentTrace;
 
@@ -50,7 +49,7 @@ import javafx.scene.paint.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class OperationsView extends AnchorPane implements IComponents {
+public final class OperationsView extends AnchorPane {
 	private enum SortMode {
 		MODEL_ORDER, A_TO_Z, Z_TO_A
 	}

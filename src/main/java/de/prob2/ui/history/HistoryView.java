@@ -8,7 +8,6 @@ import com.google.inject.Inject;
 import de.prob.statespace.Trace;
 import de.prob.statespace.Transition;
 
-import de.prob2.ui.internal.IComponents;
 import de.prob2.ui.internal.StageManager;
 import de.prob2.ui.prob2fx.CurrentTrace;
 
@@ -25,7 +24,7 @@ import javafx.scene.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class HistoryView extends AnchorPane implements IComponents{
+public final class HistoryView extends AnchorPane {
 	private static class TransitionCell extends ListCell<HistoryItem> {
 		@Override
 		protected void updateItem(HistoryItem item, boolean empty) {

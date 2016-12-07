@@ -14,7 +14,6 @@ import de.prob.statespace.IAnimationChangeListener;
 import de.prob.statespace.Trace;
 import de.prob.statespace.Transition;
 
-import de.prob2.ui.internal.IComponents;
 import de.prob2.ui.internal.StageManager;
 
 import javafx.application.Platform;
@@ -33,7 +32,7 @@ import javafx.scene.layout.AnchorPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class AnimationsView extends AnchorPane implements IAnimationChangeListener, IComponents {
+public final class AnimationsView extends AnchorPane implements IAnimationChangeListener {
 	private static final Logger logger = LoggerFactory.getLogger(AnimationsView.class);
 
 	@FXML private TableView<Animation> animationsTable;
