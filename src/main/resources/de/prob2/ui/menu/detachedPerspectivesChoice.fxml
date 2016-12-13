@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.Scene?>
 <?import javafx.stage.Stage?>
+<?import javafx.scene.layout.StackPane?>
 <fx:root type="Stage" title="%menu.perspectives.detach" resizable="false" xmlns:fx="http://javafx.com/fxml/1">
 	<scene>
 		<Scene>
-			<VBox spacing="15.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0" styleClass="dark">
-				<CheckBox fx:id="detachOperations" text="%menu.perspectives.detachStage.operations" onAction="#checkboxHandler"/>
-				<CheckBox fx:id="detachHistory" text="%menu.perspectives.detachStage.history" onAction="#checkboxHandler"/>
-				<CheckBox fx:id="detachModelcheck" text="%menu.perspectives.detachStage.modelcheck" onAction="#checkboxHandler"/>
-				<CheckBox fx:id="detachStats" text="%menu.perspectives.detachStage.stats" onAction="#checkboxHandler"/>
-				<CheckBox fx:id="detachAnimations" text="%menu.perspectives.detachStage.animations" onAction="#checkboxHandler"/>
-			</VBox>
+			<StackPane>
+				<ListView fx:id="lv"/>
+			</StackPane>
 		</Scene>
 	</scene>
 </fx:root>

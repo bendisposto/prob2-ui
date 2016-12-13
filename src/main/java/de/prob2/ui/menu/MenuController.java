@@ -37,12 +37,12 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.control.Accordion;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.TitledPane;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -326,21 +326,14 @@ public final class MenuController extends MenuBar {
 		loader.setRoot(injector.getInstance(MainController.class));
 		
 		final Parent root;
-		final List<TitledPane> panes = new ArrayList<>();
+		// Necessary because local/anonymous classes cannot modify outer variables (but they can modify the object stored in the variable).
+		final Accordion[] accordionRef = new Accordion[1];
 		loader.setController(new Object() {
-			@FXML private TitledPane operationsTP;
-			@FXML private TitledPane historyTP;
-			@FXML private TitledPane modelcheckTP;
-			@FXML private TitledPane statsTP;
-			@FXML private TitledPane animationsTP;
+			@FXML private Accordion leftAccordion;
 			
 			@FXML
 			public void initialize() {
-				panes.add(operationsTP);
-				panes.add(historyTP);
-				panes.add(modelcheckTP);
-				panes.add(statsTP);
-				panes.add(animationsTP);
+				accordionRef[0] = leftAccordion;
 			}
 		});
 		try {
@@ -351,7 +344,7 @@ public final class MenuController extends MenuBar {
 			return null;
 		}
 		window.getScene().setRoot(root);
-		dvController.updateDetachables(panes);
+		dvController.updateAccordion(accordionRef[0]);
 		
 		if (System.getProperty("os.name", "").toLowerCase().contains("mac")) {
 			final MenuToolkit tk = MenuToolkit.toolkit();
