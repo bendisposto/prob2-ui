@@ -45,12 +45,18 @@ public class Model {
 		addedEdges.add(edge);
 		removedEdges.remove(edge); // edge should not be in added and removed set
 		edges.add(edge);
+
+		edge.getSource().addOutgoingEdge(edge);
+		edge.getTarget().addIncomingEdge(edge);
 	}
 
 	public void removeEdge(Edge edge) {
 		removedEdges.add(edge);
 		addedEdges.remove(edge); // edge should not be in added and removed set
 		edges.remove(edge);
+
+		edge.getSource().removeOutgoingEdge(edge);
+		edge.getTarget().removeIncomingEdge(edge);
 	}
 
 	public Set<Vertex> getVertices() {

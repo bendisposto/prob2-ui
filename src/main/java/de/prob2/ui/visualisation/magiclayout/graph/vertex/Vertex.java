@@ -1,8 +1,11 @@
 package de.prob2.ui.visualisation.magiclayout.graph.vertex;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import de.prob2.ui.visualisation.magiclayout.graph.Edge;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Ellipse;
@@ -43,6 +46,9 @@ public class Vertex extends AbstractVertex {
 
 	private Type type;
 	private Style style = new Style();
+
+	private Set<Edge> outgoingEdges = new HashSet<>();
+	private Set<Edge> incomingEdges = new HashSet<>();
 
 	Vertex() {
 	}
@@ -109,6 +115,64 @@ public class Vertex extends AbstractVertex {
 		shape.setStrokeLineCap(StrokeLineCap.BUTT);
 		shape.setStrokeLineJoin(StrokeLineJoin.ROUND);
 	}
+
+	public void addOutgoingEdge(Edge edge) {
+		outgoingEdges.add(edge);
+	}
+
+	public void removeOutgoingEdge(Edge edge) {
+		outgoingEdges.remove(edge);
+	}
+
+	public void addIncomingEdge(Edge edge) {
+		incomingEdges.add(edge);
+	}
+
+	public void removeIncomingEdge(Edge edge) {
+		incomingEdges.remove(edge);
+	}
+
+	public int degree() {
+		return incomingEdges.size() + outgoingEdges.size();
+	}
+
+	public boolean isSink() {
+		return outgoingEdges.isEmpty();
+	}
+
+	public boolean isSource() {
+		return incomingEdges.isEmpty();
+	}
+
+	public Set<Edge> getIncomingEdges() {
+		return incomingEdges;
+	}
+
+	public Set<Edge> getOutgoingEdges() {
+		return outgoingEdges;
+	}
+
+	public Set<Vertex> getSuccessors() {
+		Set<Vertex> successors = new HashSet<>();
+		outgoingEdges.forEach(edge -> successors.add(edge.getTarget()));
+		return successors;
+	}
+
+	public Set<Vertex> getPredecessors() {
+		Set<Vertex> predecessors = new HashSet<>();
+		incomingEdges.forEach(edge -> predecessors.add(edge.getSource()));
+		return predecessors;
+	}
+
+	public Set<Vertex> getNeighbours() {
+		Set<Vertex> neighbours = new HashSet<>();
+
+		neighbours.addAll(getPredecessors());
+		neighbours.addAll(getSuccessors());
+
+		return neighbours;
+	}
+
 
 	@Override
 	void updateProperties() {
