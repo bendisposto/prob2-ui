@@ -1,4 +1,4 @@
-package de.prob2.ui.visualisation.magiclayout.editPane;
+package de.prob2.ui.visualisation.magiclayout.editpane;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +7,6 @@ import java.util.ResourceBundle;
 
 import com.google.inject.Inject;
 
-import de.prob.animator.domainobjects.IEvalElement;
 import de.prob2.ui.internal.FXMLInjected;
 import de.prob2.ui.internal.StageManager;
 import de.prob2.ui.prob2fx.CurrentTrace;
@@ -16,6 +15,7 @@ import de.prob2.ui.visualisation.magiclayout.MagicGraphI;
 import de.prob2.ui.visualisation.magiclayout.MagicLayoutSettings;
 import de.prob2.ui.visualisation.magiclayout.MagicNodegroup;
 import de.prob2.ui.visualisation.magiclayout.MagicShape;
+
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.CheckBox;
@@ -47,6 +47,7 @@ public class MagicLayoutEditNodes extends MagicLayoutEditPane<MagicNodegroup> {
 	}
 
 	@FXML
+	@Override
 	public void initialize() {
 		super.initialize();
 
@@ -77,9 +78,9 @@ public class MagicLayoutEditNodes extends MagicLayoutEditPane<MagicNodegroup> {
 
 	void addMachineElements() {
 		if (currentTrace.getStateSpace() != null) {
-			List<IEvalElement> setEvalElements = currentTrace.getStateSpace().getLoadedMachine().getSetEvalElements();
-			setEvalElements.forEach(element -> {
-				MagicNodegroup nodegroup = new MagicNodegroup(element.toString(), element.toString(), true);
+			List<String> setNames = currentTrace.getStateSpace().getLoadedMachine().getSetNames();
+			setNames.forEach(name -> {
+				MagicNodegroup nodegroup = new MagicNodegroup(name, name, true);
 				nodegroup.nodeColorProperty().set(Color.hsb(new Random().nextDouble() * 360, 0.2, 1));
 				listView.getItems().add(nodegroup);
 			});
@@ -124,13 +125,11 @@ public class MagicLayoutEditNodes extends MagicLayoutEditPane<MagicNodegroup> {
 			nodes = new MagicNodegroup("nodes" + i);
 			i++;
 		}
-		super.addMagicComponent(nodes);
+		addMagicComponent(nodes);
 	}
 
 	public List<MagicNodegroup> getNodegroups() {
-		List<MagicNodegroup> nodesList = new ArrayList<>();
-		listView.getItems().forEach(comp -> nodesList.add((MagicNodegroup) comp));
-		return nodesList;
+		return new ArrayList<>(listView.getItems());
 	}
 
 	@Override

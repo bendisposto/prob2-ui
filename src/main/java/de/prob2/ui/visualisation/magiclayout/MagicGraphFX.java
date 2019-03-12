@@ -21,10 +21,10 @@ import de.prob2.ui.internal.StageManager;
 import de.prob2.ui.visualisation.magiclayout.graph.Edge;
 import de.prob2.ui.visualisation.magiclayout.graph.Graph;
 import de.prob2.ui.visualisation.magiclayout.graph.Model;
-import de.prob2.ui.visualisation.magiclayout.graph.Vertex.Vertex;
 import de.prob2.ui.visualisation.magiclayout.graph.layout.LayeredLayout;
 import de.prob2.ui.visualisation.magiclayout.graph.layout.Layout;
 import de.prob2.ui.visualisation.magiclayout.graph.layout.RandomLayout;
+import de.prob2.ui.visualisation.magiclayout.graph.vertex.Vertex;
 import javafx.scene.Node;
 
 public class MagicGraphFX implements MagicGraphI {
@@ -41,13 +41,13 @@ public class MagicGraphFX implements MagicGraphI {
 
 	@Override
 	public List<MagicLayout> getSupportedLayouts() {
-		MagicLayout shapes[] = new MagicLayout[] { MagicLayout.LAYERED, MagicLayout.RANDOM };
+		MagicLayout[] shapes = new MagicLayout[] { MagicLayout.LAYERED, MagicLayout.RANDOM };
 		return Arrays.asList(shapes);
 	}
 
 	@Override
 	public List<MagicShape> getSupportedShapes() {
-		MagicShape shapes[] = new MagicShape[] { MagicShape.RECTANGLE, MagicShape.CIRCLE, MagicShape.ELLIPSE,
+		MagicShape[] shapes = new MagicShape[] { MagicShape.RECTANGLE, MagicShape.CIRCLE, MagicShape.ELLIPSE,
 //				MagicShape.TRIANGLE 
 		};
 		return Arrays.asList(shapes);
@@ -55,14 +55,14 @@ public class MagicGraphFX implements MagicGraphI {
 
 	@Override
 	public List<MagicLineType> getSupportedLineTypes() {
-		MagicLineType lineTypes[] = new MagicLineType[] { MagicLineType.CONTINUOUS, MagicLineType.DASHED,
+		MagicLineType[] lineTypes = new MagicLineType[] { MagicLineType.CONTINUOUS, MagicLineType.DASHED,
 				MagicLineType.DOTTED };
 		return Arrays.asList(lineTypes);
 	}
 
 	@Override
 	public List<MagicLineWidth> getSupportedLineWidths() {
-		MagicLineWidth lineWidths[] = new MagicLineWidth[] { MagicLineWidth.NARROW, MagicLineWidth.DEFAULT,
+		MagicLineWidth[] lineWidths = new MagicLineWidth[] { MagicLineWidth.NARROW, MagicLineWidth.DEFAULT,
 				MagicLineWidth.WIDE, MagicLineWidth.EXTRA_WIDE };
 		return Arrays.asList(lineWidths);
 	}
@@ -116,9 +116,9 @@ public class MagicGraphFX implements MagicGraphI {
 
 		// determine which vertices and edges have to be removed and remove them
 		verticesBefore.removeAll(transformedNewModel.getVertices());
-		verticesBefore.forEach(vertex -> graphModel.removeVertex(vertex));
+		verticesBefore.forEach(graphModel::removeVertex);
 		edgesBefore.removeAll(transformedNewModel.getEdges());
-		edgesBefore.forEach(edge -> graphModel.removeEdge(edge));
+		edgesBefore.forEach(graphModel::removeEdge);
 
 		// add the new vertices and edges
 		combineModel(graphModel, transformedNewModel);
@@ -188,15 +188,15 @@ public class MagicGraphFX implements MagicGraphI {
 	private Model addStateValuesToModel(State state) {
 		Model model = new Model();
 
-		List<IEvalElement> setEvalElements = state.getStateSpace().getLoadedMachine().getSetEvalElements();
+		List<IEvalElement> setEvalElements = state.getStateSpace().getLoadedMachine().getSetEvalElements(FormulaExpand.EXPAND);
 		Map<String, BObject> translatedSetsMap = translateMap(state.evalFormulas(setEvalElements));
 		translatedSetsMap.forEach((string, obj) -> combineModel(model, getModel(string, obj)));
 
-		Map<IEvalElement, AbstractEvalResult> constantResultMap = state.getConstantValues();
+		Map<IEvalElement, AbstractEvalResult> constantResultMap = state.getConstantValues(FormulaExpand.EXPAND);
 		Map<String, BObject> translatedConstantsMap = translateMap(constantResultMap);
 		translatedConstantsMap.forEach((string, obj) -> combineModel(model, getModel(string, obj)));
 
-		Map<IEvalElement, AbstractEvalResult> variableResultMap = state.getVariableValues();
+		Map<IEvalElement, AbstractEvalResult> variableResultMap = state.getVariableValues(FormulaExpand.EXPAND);
 		Map<String, BObject> translatedVariableMap = translateMap(variableResultMap);
 		translatedVariableMap.forEach((string, obj) -> combineModel(model, getModel(string, obj)));
 

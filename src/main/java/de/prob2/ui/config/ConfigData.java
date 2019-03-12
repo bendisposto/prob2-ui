@@ -31,7 +31,8 @@ public final class ConfigData extends BasicConfigData {
 	public double[] verticalDividerPositions;
 	public List<Double> statesViewColumnsWidth;
 	public OperationsView.SortMode operationsSortMode;
-	public boolean operationsShowNotEnabled;
+	public boolean operationsShowDisabled;
+	public boolean operationsShowUnambiguous;
 	public Map<String, String> globalPreferences;
 	public Path pluginDirectory;
 	public Map<FileChooserManager.Kind, Path> fileChooserInitialDirectories;

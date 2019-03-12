@@ -1,6 +1,7 @@
 package de.prob2.ui.operations;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -171,6 +172,8 @@ public final class OperationsView extends VBox {
 	@FXML
 	private ToggleButton disabledOpsToggle;
 	@FXML
+	private ToggleButton unambiguousToggle;
+	@FXML
 	private TextField searchBar;
 	@FXML
 	private TextField randomText;
@@ -194,6 +197,7 @@ public final class OperationsView extends VBox {
 	private final Map<String, List<String>> opToParams = new HashMap<>();
 	private final List<OperationItem> events = new ArrayList<>();
 	private final BooleanProperty showDisabledOps;
+	private final BooleanProperty showUnambiguous;
 	private final ObjectProperty<OperationsView.SortMode> sortMode;
 	private final CurrentTrace currentTrace;
 	private final Injector injector;
@@ -210,6 +214,7 @@ public final class OperationsView extends VBox {
 						   final Injector injector, final ResourceBundle bundle, final StatusBar statusBar,
 						   final StopActions stopActions, final Config config) {
 		this.showDisabledOps = new SimpleBooleanProperty(this, "showDisabledOps", true);
+		this.showUnambiguous = new SimpleBooleanProperty(this, "showUnambiguous", false);
 		this.sortMode = new SimpleObjectProperty<>(this, "sortMode", OperationsView.SortMode.MODEL_ORDER);
 		this.currentTrace = currentTrace;
 		this.alphanumericComparator = new AlphanumericComparator(locale);
@@ -222,7 +227,7 @@ public final class OperationsView extends VBox {
 		this.randomExecutionThread = new SimpleObjectProperty<>(this, "randomExecutionThread", null);
 		stopActions.add(this.updater::shutdownNow);
 
-		stageManager.loadFXML(this, "ops_view.fxml");
+		stageManager.loadFXML(this, "operations_view.fxml");
 	}
 
 	@FXML
@@ -251,6 +256,12 @@ public final class OperationsView extends VBox {
 		showDisabledOps.addListener((o, from, to) -> {
 			((FontAwesomeIconView)disabledOpsToggle.getGraphic()).setIcon(to ? FontAwesomeIcon.EYE : FontAwesomeIcon.EYE_SLASH);
 			disabledOpsToggle.setSelected(to);
+			update(currentTrace.get());
+		});
+
+		showUnambiguous.addListener((o, from, to) -> {
+			((FontAwesomeIconView)unambiguousToggle.getGraphic()).setIcon(to ? FontAwesomeIcon.PLUS_SQUARE : FontAwesomeIcon.MINUS_SQUARE);
+			unambiguousToggle.setSelected(to);
 			update(currentTrace.get());
 		});
 
@@ -285,13 +296,15 @@ public final class OperationsView extends VBox {
 					setSortMode(configData.operationsSortMode);
 				}
 				
-				setShowDisabledOps(configData.operationsShowNotEnabled);
+				setShowDisabledOps(configData.operationsShowDisabled);
+				setShowUnambiguous(configData.operationsShowUnambiguous);
 			}
 			
 			@Override
 			public void saveConfig(final ConfigData configData) {
 				configData.operationsSortMode = getSortMode();
-				configData.operationsShowNotEnabled = getShowDisabledOps();
+				configData.operationsShowDisabled = getShowDisabledOps();
+				configData.operationsShowUnambiguous = getShowUnambiguous();
 			}
 		});
 	}
@@ -300,7 +313,7 @@ public final class OperationsView extends VBox {
 		if (
 			item != null
 			&& item.getStatus() == OperationItem.Status.ENABLED
-			&& item.getTrace().equals(currentTrace.get())
+			&& item.getTransition().getSource().equals(currentTrace.getCurrentState())
 		) {
 			Trace forward = currentTrace.forward();
 			if(forward != null && item.getTransition().equals(forward.getCurrentTransition())) {
@@ -334,13 +347,16 @@ public final class OperationsView extends VBox {
 
 		events.clear();
 		final Set<Transition> operations = trace.getNextTransitions(true, FormulaExpand.TRUNCATE);
-		final Set<String> disabled = new HashSet<>(opNames);
-		final Set<String> withTimeout = trace.getCurrentState().getTransitionsWithTimeout();
-		for (Transition transition : operations) {
-			disabled.remove(transition.getName());
-			events.add(OperationItem.forTransition(trace, transition));
+		Collection<OperationItem> operationItems = OperationItem.forTransitions(trace.getStateSpace(), operations);
+		if (!unambiguousToggle.isSelected()) {
+			operationItems = OperationItem.removeUnambiguousConstantsAndVariables(operationItems);
 		}
-		showDisabledAndWithTimeout(trace, disabled, withTimeout);
+		events.addAll(operationItems);
+		
+		final Set<String> disabled = new HashSet<>(opNames);
+		disabled.removeAll(operations.stream().map(Transition::getName).collect(Collectors.toSet()));
+		final Set<String> withTimeout = trace.getCurrentState().getTransitionsWithTimeout();
+		showDisabledAndWithTimeout(disabled, withTimeout);
 
 		doSort();
 
@@ -363,20 +379,19 @@ public final class OperationsView extends VBox {
 		});
 	}
 
-	private void showDisabledAndWithTimeout(final Trace trace, final Set<String> notEnabled,
-			final Set<String> withTimeout) {
+	private void showDisabledAndWithTimeout(final Set<String> notEnabled, final Set<String> withTimeout) {
 		if (this.getShowDisabledOps()) {
 			for (String s : notEnabled) {
 				if (!"$initialise_machine".equals(s)) {
 					events.add(OperationItem.forDisabled(
-						trace, s, withTimeout.contains(s) ? OperationItem.Status.TIMEOUT : OperationItem.Status.DISABLED, opToParams.get(s)
+						s, withTimeout.contains(s) ? OperationItem.Status.TIMEOUT : OperationItem.Status.DISABLED, opToParams.get(s)
 					));
 				}
 			}
 		}
 		for (String s : withTimeout) {
 			if (!notEnabled.contains(s)) {
-				events.add(OperationItem.forDisabled(trace, s, OperationItem.Status.TIMEOUT, Collections.emptyList()));
+				events.add(OperationItem.forDisabled(s, OperationItem.Status.TIMEOUT, Collections.emptyList()));
 			}
 		}
 	}
@@ -420,6 +435,11 @@ public final class OperationsView extends VBox {
 	@FXML
 	private void handleDisabledOpsToggle() {
 		this.setShowDisabledOps(disabledOpsToggle.isSelected());
+	}
+
+	@FXML
+	private void handleUnambiguousToggle() {
+		this.setShowUnambiguous(unambiguousToggle.isSelected());
 	}
 
 	private List<OperationItem> applyFilter(final String filter) {
@@ -471,38 +491,44 @@ public final class OperationsView extends VBox {
 
 	@FXML
 	public void random(ActionEvent event) {
-		if (currentTrace.exists()) {
-			Thread executionThread = new Thread(() -> {
-				String randomInput = randomText.getText();
-				try {
-					Trace newTrace = null;
-					if (event.getSource().equals(randomText)) {
-						if (randomInput.isEmpty()) {
-							return;
-						}
-						newTrace = currentTrace.get().randomAnimation(Integer.parseInt(randomInput));
-					} else if (event.getSource().equals(oneRandomEvent)) {
-						newTrace = currentTrace.get().randomAnimation(1);
-					} else if (event.getSource().equals(fiveRandomEvents)) {
-						newTrace = currentTrace.get().randomAnimation(5);
-					} else if (event.getSource().equals(tenRandomEvents)) {
-						newTrace = currentTrace.get().randomAnimation(10);
-					}
-					currentTrace.set(newTrace);
-					randomExecutionThread.set(null);
-				} catch (NumberFormatException e) {
-					LOGGER.error("Invalid input for executing random number of events",e);
-					Platform.runLater(() -> stageManager
-							.makeAlert(Alert.AlertType.WARNING,
-									"operations.operationsView.alerts.invalidNumberOfOparations.header",
-									"operations.operationsView.alerts.invalidNumberOfOparations.content", randomInput)
-							.showAndWait());
-					randomExecutionThread.set(null);
-				}
-			});
-			randomExecutionThread.set(executionThread);
-			executionThread.start();
+		final int operationCount;
+		if (event.getSource().equals(randomText)) {
+			final String randomInput = randomText.getText();
+			if (randomInput.isEmpty()) {
+				return;
+			}
+			try {
+				operationCount = Integer.parseInt(randomInput);
+			} catch (NumberFormatException e) {
+				LOGGER.error("Invalid input for executing random number of events",e);
+				stageManager.makeAlert(Alert.AlertType.WARNING,
+					"operations.operationsView.alerts.invalidNumberOfOparations.header",
+					"operations.operationsView.alerts.invalidNumberOfOparations.content", randomInput)
+					.showAndWait();
+				return;
+			}
+		} else if (event.getSource().equals(oneRandomEvent)) {
+			operationCount = 1;
+		} else if (event.getSource().equals(fiveRandomEvents)) {
+			operationCount = 5;
+		} else if (event.getSource().equals(tenRandomEvents)) {
+			operationCount = 10;
+		} else {
+			throw new AssertionError("Unhandled random animation event source: " + event.getSource());
 		}
+		
+		final Thread executionThread = new Thread(() -> {
+			try {
+				final Trace trace = currentTrace.get();
+				if (trace != null) {
+					currentTrace.set(trace.randomAnimation(operationCount));
+				}
+			} finally {
+				randomExecutionThread.set(null);
+			}
+		}, "Random Operation Executor");
+		randomExecutionThread.set(executionThread);
+		executionThread.start();
 	}
 
 	@FXML
@@ -543,5 +569,13 @@ public final class OperationsView extends VBox {
 
 	private void setShowDisabledOps(boolean showDisabledOps) {
 		this.showDisabledOps.set(showDisabledOps);
+	}
+	
+	private boolean getShowUnambiguous() {
+		return this.showUnambiguous.get();
+	}
+
+	private void setShowUnambiguous(final boolean showUnambiguous) {
+		this.showUnambiguous.set(showUnambiguous);
 	}
 }

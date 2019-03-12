@@ -7,9 +7,9 @@ import com.google.inject.Injector;
 import com.google.inject.Singleton;
 
 import de.prob.check.ModelCheckingOptions;
-import de.prob.check.ModelCheckingOptions.Options;
 import de.prob2.ui.internal.FXMLInjected;
 import de.prob2.ui.internal.StageManager;
+import de.prob2.ui.prob2fx.CurrentProject;
 import de.prob2.ui.prob2fx.CurrentTrace;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -68,14 +68,17 @@ public class ModelcheckingStage extends Stage {
 	
 	private final CurrentTrace currentTrace;
 	
+	private final CurrentProject currentProject;
+	
 	private final Injector injector;
 
 	@Inject
 	private ModelcheckingStage(final StageManager stageManager, final ResourceBundle bundle, 
-							final CurrentTrace currentTrace, final Injector injector) {
+							final CurrentTrace currentTrace, final CurrentProject currentProject, final Injector injector) {
 		this.bundle = bundle;
 		this.stageManager = stageManager;
 		this.currentTrace = currentTrace;
+		this.currentProject = currentProject;
 		this.injector = injector;
 		stageManager.loadFXML(this, "modelchecking_stage.fxml");
 	}
@@ -101,7 +104,15 @@ public class ModelcheckingStage extends Stage {
 	@FXML
 	private void startModelCheck() {
 		if (currentTrace.exists()) {
-			injector.getInstance(Modelchecker.class).checkItem(getOptions(), selectSearchStrategy.getConverter(), selectSearchStrategy.getValue());
+			ModelCheckingItem modelcheckingItem = new ModelCheckingItem(getOptions(), selectSearchStrategy.getConverter().toString(selectSearchStrategy.getValue()));
+			if(!currentProject.getCurrentMachine().getModelcheckingItems().contains(modelcheckingItem)) {
+				this.hide();
+				injector.getInstance(Modelchecker.class).checkItem(modelcheckingItem, false);
+				currentProject.getCurrentMachine().getModelcheckingItems().add(modelcheckingItem);
+			} else {
+				stageManager.makeAlert(Alert.AlertType.WARNING, "", "verifications.modelchecking.modelcheckingStage.strategy.alreadyChecked").showAndWait();
+				this.hide();
+			}
 		} else {
 			stageManager.makeAlert(Alert.AlertType.ERROR, "",
 					"verifications.modelchecking.modelcheckingStage.alerts.noMachineLoaded.content")
@@ -139,7 +150,6 @@ public class ModelcheckingStage extends Stage {
 
 	@FXML
 	private void cancel() {
-		injector.getInstance(ModelcheckingView.class).cancelModelcheck();
 		this.hide();
 	}
 
@@ -147,64 +157,4 @@ public class ModelcheckingStage extends Stage {
 		Platform.runLater(() -> this.startButton.setDisable(disableStart));
 	}
 	
-	public void show(ModelCheckingOptions options) {
-		reset();
-		setDisableModelcheck(true);
-		if(!options.getPrologOptions().contains(Options.BREADTH_FIRST_SEARCH) && 
-				!options.getPrologOptions().contains(Options.DEPTH_FIRST_SEARCH)) {
-			selectSearchStrategy.getSelectionModel().select(SearchStrategy.MIXED_BF_DF);
-		}
-		for(Options option : options.getPrologOptions()) {
-			switch(option) {
-				case BREADTH_FIRST_SEARCH:
-					selectSearchStrategy.getSelectionModel().select(SearchStrategy.BREADTH_FIRST);
-					break;
-				case DEPTH_FIRST_SEARCH:
-					selectSearchStrategy.getSelectionModel().select(SearchStrategy.DEPTH_FIRST);
-					break;
-				case FIND_DEADLOCKS:
-					findDeadlocks.setSelected(true);
-					break;
-				case FIND_INVARIANT_VIOLATIONS:
-					findInvViolations.setSelected(true);
-					break;
-				case FIND_ASSERTION_VIOLATIONS:
-					findBAViolations.setSelected(true);
-					break;
-				case INSPECT_EXISTING_NODES:
-					break;
-				case STOP_AT_FULL_COVERAGE:
-					stopAtFullCoverage.setSelected(true);
-					break;
-				case PARTIAL_ORDER_REDUCTION:
-					break;
-				case PARTIAL_GUARD_EVALUATION:
-					break;
-				case FIND_GOAL:
-					findGoal.setSelected(true);
-					break;
-				default:
-					break;
-			}
-		}
-		this.show();
-	}
-	
-	private void reset() {
-		findDeadlocks.setSelected(false);
-		findInvViolations.setSelected(false);
-		findBAViolations.setSelected(false);
-		findGoal.setSelected(false);
-		stopAtFullCoverage.setSelected(false);
-	}
-	
-	public void setDisableModelcheck(boolean disable) {
-		startButton.setDisable(disable);
-		selectSearchStrategy.setDisable(disable);
-		findDeadlocks.setDisable(disable);
-		findInvViolations.setDisable(disable);
-		findBAViolations.setDisable(disable);
-		findGoal.setDisable(disable);
-		stopAtFullCoverage.setDisable(disable);
-	}
 }

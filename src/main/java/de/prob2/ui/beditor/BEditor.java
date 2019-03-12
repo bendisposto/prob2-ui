@@ -1,6 +1,21 @@
 package de.prob2.ui.beditor;
 
+import java.io.IOException;
+import java.io.PushbackReader;
+import java.io.StringReader;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import com.google.inject.Inject;
+
 import de.be4.classicalb.core.parser.BLexer;
 import de.be4.classicalb.core.parser.lexer.LexerException;
 import de.be4.classicalb.core.parser.node.EOF;
@@ -137,36 +152,24 @@ import de.be4.classicalb.core.parser.node.TWhen;
 import de.be4.classicalb.core.parser.node.TWhere;
 import de.be4.classicalb.core.parser.node.TWhile;
 import de.be4.classicalb.core.parser.node.Token;
+import de.prob.animator.domainobjects.ErrorItem;
 import de.prob2.ui.internal.FXMLInjected;
 import de.prob2.ui.layout.FontSize;
 import de.prob2.ui.prob2fx.CurrentProject;
+
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCombination;
+
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.model.StyleSpans;
 import org.fxmisc.richtext.model.StyleSpansBuilder;
-import org.fxmisc.wellbehaved.event.EventPattern;
-import org.fxmisc.wellbehaved.event.InputMap;
-import org.fxmisc.wellbehaved.event.Nodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.PushbackReader;
-import java.io.StringReader;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @FXMLInjected
 public class BEditor extends CodeArea {
@@ -222,39 +225,49 @@ public class BEditor extends CodeArea {
 	
 	private final ResourceBundle bundle;
 
+	private final ObservableList<ErrorItem.Location> errorLocations;
 
 	@Inject
 	private BEditor(final FontSize fontSize, final ResourceBundle bundle, final CurrentProject currentProject) {
 		this.fontSize = fontSize;
 		this.currentProject = currentProject;
 		this.bundle = bundle;
+		this.errorLocations = FXCollections.observableArrayList();
 		initialize();
-		initializeContextMenu(bundle);
+		initializeContextMenu();
 	}
 
-	private void initializeContextMenu(ResourceBundle bundle){
-		ContextMenu contextMenu = new ContextMenu();
-		MenuItem menuItem = new MenuItem(bundle.getString("common.contextMenu.undo"));
-		menuItem.setOnAction(e -> this.getUndoManager().undo());
-		contextMenu.getItems().add(menuItem);
-		menuItem = new MenuItem(bundle.getString("common.contextMenu.redo"));
-		menuItem.setOnAction(e -> this.getUndoManager().redo());
-		contextMenu.getItems().add(menuItem);
-		menuItem = new MenuItem(bundle.getString("common.contextMenu.cut"));
-		menuItem.setOnAction(e -> this.cut());
-		contextMenu.getItems().add(menuItem);
-		menuItem = new MenuItem(bundle.getString("common.contextMenu.copy"));
-		menuItem.setOnAction(e -> this.copy());
-		contextMenu.getItems().add(menuItem);
-		menuItem = new MenuItem(bundle.getString("common.contextMenu.paste"));
-		menuItem.setOnAction(e -> this.paste());
-		contextMenu.getItems().add(menuItem);
-		menuItem = new MenuItem(bundle.getString("common.contextMenu.delete"));
-		menuItem.setOnAction(e -> this.deleteText(this.getSelection()));
-		contextMenu.getItems().add(menuItem);
-		menuItem = new MenuItem(bundle.getString("common.contextMenu.selectAll"));
-		menuItem.setOnAction(e -> this.selectAll());
-		contextMenu.getItems().add(menuItem);
+	private void initializeContextMenu() {
+		final ContextMenu contextMenu = new ContextMenu();
+		
+		final MenuItem undoItem = new MenuItem(bundle.getString("common.contextMenu.undo"));
+		undoItem.setOnAction(e -> this.getUndoManager().undo());
+		contextMenu.getItems().add(undoItem);
+		
+		final MenuItem redoItem = new MenuItem(bundle.getString("common.contextMenu.redo"));
+		redoItem.setOnAction(e -> this.getUndoManager().redo());
+		contextMenu.getItems().add(redoItem);
+		
+		final MenuItem cutItem = new MenuItem(bundle.getString("common.contextMenu.cut"));
+		cutItem.setOnAction(e -> this.cut());
+		contextMenu.getItems().add(cutItem);
+		
+		final MenuItem copyItem = new MenuItem(bundle.getString("common.contextMenu.copy"));
+		copyItem.setOnAction(e -> this.copy());
+		contextMenu.getItems().add(copyItem);
+		
+		final MenuItem pasteItem = new MenuItem(bundle.getString("common.contextMenu.paste"));
+		pasteItem.setOnAction(e -> this.paste());
+		contextMenu.getItems().add(pasteItem);
+		
+		final MenuItem deleteItem = new MenuItem(bundle.getString("common.contextMenu.delete"));
+		deleteItem.setOnAction(e -> this.deleteText(this.getSelection()));
+		contextMenu.getItems().add(deleteItem);
+		
+		final MenuItem selectAllItem = new MenuItem(bundle.getString("common.contextMenu.selectAll"));
+		selectAllItem.setOnAction(e -> this.selectAll());
+		contextMenu.getItems().add(selectAllItem);
+		
 		this.setContextMenu(contextMenu);
 	}
 	
@@ -265,7 +278,7 @@ public class BEditor extends CodeArea {
 		});
 		this.setParagraphGraphicFactory(LineNumberFactory.get(this));
 		this.richChanges()
-			.filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
+			.filter(ch -> !ch.isPlainTextIdentity())
 			.successionEnds(Duration.ofMillis(100))
 			.supplyTask(this::computeHighlightingAsync)
 			.awaitLatest(this.richChanges())
@@ -276,32 +289,17 @@ public class BEditor extends CodeArea {
 					LOGGER.info("Highlighting failed", t.getFailure());
 					return Optional.empty();
 				}
-		}).subscribe(this::applyHighlighting);
+			}).subscribe(highlighting -> {
+				this.getErrorLocations().clear(); // Remove error highlighting if editor text changes
+				this.applyHighlighting(highlighting);
+			});
+		this.errorLocations.addListener((ListChangeListener<ErrorItem.Location>)change ->
+			this.applyHighlighting(computeHighlighting(this.getText()))
+		);
 
 		fontSize.fontSizeProperty().addListener((observable, from, to) ->
 			this.setStyle(String.format("-fx-font-size: %dpx;", to.intValue()))
 		);
-		Nodes.addInputMap(this, InputMap.consume(EventPattern.keyPressed(KeyCode.Z, KeyCombination.CONTROL_DOWN), e-> {
-			int oldLength = this.getText().length();
-			int caret = this.getCaretPosition();
-			this.undo();
-			int currentLength = this.getText().length();
-			int diff = currentLength - oldLength;
-			if(caret + diff >= 0 && caret + diff <= this.getText().length()) {
-				this.moveTo(caret + diff);
-			}
-		}));
-		
-		Nodes.addInputMap(this, InputMap.consume(EventPattern.keyPressed(KeyCode.Z, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN), e-> {
-			int oldLength = this.getText().length();
-			int caret = this.getCaretPosition();
-			this.redo();
-			int currentLength = this.getText().length();
-			int diff = currentLength - oldLength;
-			if(caret + diff >= 0 && caret + diff <= this.getText().length()) {
-				this.moveTo(caret + diff);
-			}
-		}));
 	}
 
 	public void startHighlighting() {
@@ -324,9 +322,38 @@ public class BEditor extends CodeArea {
 		}
 	}
 
+	private static <T> Collection<T> combineCollections(final Collection<T> a, final Collection<T> b) {
+		final Collection<T> ret = new ArrayList<>(a);
+		ret.addAll(b);
+		return ret;
+	}
+
+	private StyleSpans<Collection<String>> addErrorHighlighting(final StyleSpans<Collection<String>> highlighting) {
+		StyleSpans<Collection<String>> highlightingWithErrors = highlighting;
+		for (final ErrorItem.Location location : this.getErrorLocations()) {
+			final int startParagraph = location.getStartLine() - 1;
+			final int endParagraph = location.getEndLine() - 1;
+			final int startIndex = this.getAbsolutePosition(startParagraph, location.getStartColumn());
+			final int endIndex;
+			if (startParagraph == endParagraph) {
+				final int displayedEndColumn = location.getStartColumn() == location.getEndColumn() ? location.getStartColumn() + 1 : location.getEndColumn();
+				endIndex = this.getAbsolutePosition(startParagraph, displayedEndColumn);
+			} else {
+				endIndex = this.getAbsolutePosition(endParagraph, location.getEndColumn());
+			}
+			highlightingWithErrors = highlightingWithErrors.overlay(
+				new StyleSpansBuilder<Collection<String>>()
+					.add(Collections.emptyList(), startIndex)
+					.add(Collections.singletonList("error"), endIndex-startIndex)
+					.create(),
+				BEditor::combineCollections
+			);
+		}
+		return highlightingWithErrors;
+	}
+
 	private void applyHighlighting(StyleSpans<Collection<String>> highlighting) {
-		this.setStyleSpans(0, highlighting);
-		
+		this.setStyleSpans(0, addErrorHighlighting(highlighting));
 	}
 
 	private Task<StyleSpans<Collection<String>>> computeHighlightingAsync() {
@@ -336,7 +363,7 @@ public class BEditor extends CodeArea {
 			final Task<StyleSpans<Collection<String>>> task = new Task<StyleSpans<Collection<String>>>() {
 				@Override
 				protected StyleSpans<Collection<String>> call() {
-					return new StyleSpansBuilder<Collection<String>>().add(Collections.singleton("default"), text.length()).create();
+					return StyleSpans.singleton(Collections.emptySet(), text.length());
 				}
 			};
 			task.run();
@@ -362,11 +389,7 @@ public class BEditor extends CodeArea {
 			do {
 				t = lexer.next();
 				String string = syntaxClasses.get(t.getClass());
-				int length = t.getText().length();
-				if (t instanceof TStringLiteral) {
-					length += 2;
-				}
-				spansBuilder.add(Collections.singleton(string == null ? "default" : string), length);
+				spansBuilder.add(string == null ? Collections.emptySet() : Collections.singleton(string), t.getText().length());
 			} while (!(t instanceof EOF));
 		} catch (LexerException | IOException e) {
 			LOGGER.info("Failed to lex", e);
@@ -376,5 +399,9 @@ public class BEditor extends CodeArea {
 	
 	public void clearHistory() {
 		this.getUndoManager().forgetHistory();
+	}
+	
+	public ObservableList<ErrorItem.Location> getErrorLocations() {
+		return this.errorLocations;
 	}
 }

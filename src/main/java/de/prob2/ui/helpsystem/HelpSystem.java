@@ -90,7 +90,9 @@ public class HelpSystem extends StackPane {
 				findMatchingTreeViewEntryToSelect(url);
 			}
 		});
-		webEngine.load(((HelpTreeItem) treeView.getRoot().getChildren().get(0)).getFile().toURI().toString());
+		if (!treeView.getRoot().getChildren().isEmpty()) {
+			webEngine.load(((HelpTreeItem) treeView.getRoot().getChildren().get(0)).getFile().toURI().toString());
+		}
 
 		external.setOnAction(e -> injector.getInstance(ProB2.class).getHostServices().showDocument("https://www3.hhu.de/stups/prob/index.php/Main_Page"));
 		external.setGraphic(new FontAwesomeIconView(FontAwesomeIcon.EXTERNAL_LINK_SQUARE));

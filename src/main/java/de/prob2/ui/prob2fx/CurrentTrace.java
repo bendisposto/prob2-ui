@@ -55,7 +55,8 @@ public final class CurrentTrace extends ReadOnlyObjectPropertyBase<Trace> {
 				currentState.explore();
 			} catch (RuntimeException e) {
 				LOGGER.error("Exception while exploring new state");
-				Platform.runLater(() -> stageManager.makeExceptionAlert(e, "prob2fx.currentTrace.alerts.exceptionWhileExploringNewState.content", currentState.getId()).show());
+				//Casting currentState.getId() is necessary because it returns a String so that the wrong makeExceptionAlert function is invoked
+				Platform.runLater(() -> stageManager.makeExceptionAlert(e, "prob2fx.currentTrace.alerts.exceptionWhileExploringNewState.content", (Object) currentState.getId()).show());
 			}
 		}
 		
@@ -196,6 +197,9 @@ public final class CurrentTrace extends ReadOnlyObjectPropertyBase<Trace> {
 		}
 		if (oldTrace != null) {
 			this.animationSelector.removeTrace(oldTrace);
+			if (trace == null || !trace.getStateSpace().equals(oldTrace.getStateSpace())) {
+				oldTrace.getStateSpace().kill();
+			}
 		}
 	}
 	

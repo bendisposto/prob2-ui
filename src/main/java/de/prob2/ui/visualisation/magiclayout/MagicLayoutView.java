@@ -13,11 +13,12 @@ import com.google.inject.Singleton;
 
 import de.prob.model.representation.AbstractModel;
 import de.prob.statespace.Trace;
+import de.prob2.ui.helpsystem.HelpButton;
 import de.prob2.ui.internal.StageManager;
 import de.prob2.ui.prob2fx.CurrentProject;
 import de.prob2.ui.prob2fx.CurrentTrace;
-import de.prob2.ui.visualisation.magiclayout.editPane.MagicLayoutEditEdges;
-import de.prob2.ui.visualisation.magiclayout.editPane.MagicLayoutEditNodes;
+import de.prob2.ui.visualisation.magiclayout.editpane.MagicLayoutEditEdges;
+import de.prob2.ui.visualisation.magiclayout.editpane.MagicLayoutEditNodes;
 import javafx.beans.value.ChangeListener;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
@@ -57,6 +58,8 @@ public class MagicLayoutView extends Stage {
 	@FXML
 	private Button zoomOutButton;
 	@FXML
+	private HelpButton helpButton;
+	@FXML
 	private Button updateButton;
 	@FXML
 	private Button layoutButton;
@@ -86,6 +89,7 @@ public class MagicLayoutView extends Stage {
 	@FXML
 	public void initialize() {
 		stageManager.setMacMenuBar(this, menuBar);
+		helpButton.setHelpContent(this.getClass());
 
 		// make GraphPane zoomable
 		magicGraphPane.setOnZoom(event -> zoom(event.getZoomFactor()));
