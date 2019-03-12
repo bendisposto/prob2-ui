@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import com.google.common.collect.Sets;
 import de.prob2.ui.visualisation.magiclayout.graph.Edge;
 import de.prob2.ui.visualisation.magiclayout.graph.Graph;
 import de.prob2.ui.visualisation.magiclayout.graph.Model;
@@ -87,8 +88,8 @@ public class LayeredLayout implements Layout {
 		Set<Edge> acyclicEdges = new HashSet<>();
 
 		model.getVertices().forEach(vertex -> {
-			Set<Edge> incomingEdges = getIncomingEdges(vertex, tempEdges);
-			Set<Edge> outgoingEdges = getOutgoingEdges(vertex, tempEdges);
+			Set<Edge> incomingEdges = Sets.intersection(vertex.getIncomingEdges(), tempEdges);
+			Set<Edge> outgoingEdges = Sets.intersection(vertex.getOutgoingEdges(), tempEdges);
 
 			if (outgoingEdges.size() >= incomingEdges.size()) {
 				acyclicEdges.addAll(outgoingEdges);
@@ -172,14 +173,14 @@ public class LayeredLayout implements Layout {
 			return vertexLayerMap.get(vertex);
 		}
 
-		if (isSink(vertex, edges)) {
+		if (vertex.isSink() || Sets.intersection(vertex.getOutgoingEdges(), edges).isEmpty()) {
 			vertexLayerMap.put(vertex, 0);
 			return 0;
 		}
 
-		Integer layer = 0;
-		Set<Vertex> succesors = getSuccessors(vertex, edges);
-		for (Vertex succ : succesors) {
+		int layer = 0;
+		Set<Vertex> successors = Sets.intersection(vertex.getSuccessors(), edges);
+		for (Vertex succ : successors) {
 			int succLayer = calculateLayer(succ, edges);
 
 			if (succLayer > layer) {
@@ -244,12 +245,12 @@ public class LayeredLayout implements Layout {
 		permuteLayer.forEach(vertex -> {
 			// compute the subset of edges between the specified vertex and the fixed layer
 			Set<Edge> edgesToFixedLayer = new HashSet<>();
-			getOutgoingEdges(vertex, acyclicEdges).forEach(edge -> {
+			Sets.intersection(vertex.getOutgoingEdges(), acyclicEdges).forEach(edge -> {
 				if (fixedLayer.contains(edge.getTarget())) {
 					edgesToFixedLayer.add(edge);
 				}
 			});
-			getIncomingEdges(vertex, acyclicEdges).forEach(edge -> {
+			Sets.intersection(vertex.getIncomingEdges(), acyclicEdges).forEach(edge -> {
 				if (fixedLayer.contains(edge.getSource())) {
 					edgesToFixedLayer.add(edge);
 				}
@@ -282,7 +283,7 @@ public class LayeredLayout implements Layout {
 	 * 
 	 */
 	private double calculateBarycenter(Vertex vertex, Set<Edge> edgesToFixedLayer, List<Vertex> fixedLayer) {
-		Set<Vertex> neighbours = getNeighbours(vertex, edgesToFixedLayer);
+		Set<Vertex> neighbours = Sets.intersection(vertex.getNeighbours(), edgesToFixedLayer);
 
 		double bary = 0;
 		for (Vertex neighbour : neighbours) {
@@ -403,10 +404,10 @@ public class LayeredLayout implements Layout {
 	private double calculateForce(Vertex vertex, Set<Edge> acyclicEdges) {
 		double force = 0;
 
-		for (Edge edge : getIncomingEdges(vertex, acyclicEdges)) {
+		for (Edge edge : Sets.intersection(vertex.getIncomingEdges(), acyclicEdges)) {
 			force += edge.getSource().getCenterX() - vertex.getCenterX();
 		}
-		for (Edge edge : getOutgoingEdges(vertex, acyclicEdges)) {
+		for (Edge edge : Sets.intersection(vertex.getOutgoingEdges(), acyclicEdges)) {
 			force += edge.getTarget().getCenterX() - vertex.getCenterX();
 		}
 		force /= degree(vertex, acyclicEdges);
@@ -460,10 +461,10 @@ public class LayeredLayout implements Layout {
 		double deviation = 0;
 		for (Vertex vertex : vertices) {
 			double partDeviation = 0;
-			for (Edge edge : getIncomingEdges(vertex, acyclicEdges)) {
+			for (Edge edge : Sets.intersection(vertex.getIncomingEdges(), acyclicEdges)) {
 				partDeviation += edge.getSource().getCenterX() - vertex.getCenterX();
 			}
-			for (Edge edge : getOutgoingEdges(vertex, acyclicEdges)) {
+			for (Edge edge : Sets.intersection(vertex.getOutgoingEdges(), acyclicEdges)) {
 				partDeviation += edge.getTarget().getCenterX() - vertex.getCenterX();
 			}
 			deviation += Math.abs(partDeviation);
@@ -472,25 +473,7 @@ public class LayeredLayout implements Layout {
 	}
 
 	private int degree(Vertex vertex, Set<Edge> edges) {
-		return getIncomingEdges(vertex, edges).size() + getOutgoingEdges(vertex, edges).size();
-	}
-
-	private Set<Vertex> getNeighbours(Vertex vertex, Set<Edge> edges) {
-		Set<Vertex> neighbours = new HashSet<>();
-
-		edges.forEach(edge -> {
-			if (edge.getSource().equals(vertex)) {
-				neighbours.add(edge.getTarget());
-			} else if (edge.getTarget().equals(vertex)) {
-				neighbours.add(edge.getSource());
-			}
-		});
-
-		return neighbours;
-	}
-
-	private boolean isSink(Vertex vertex, Set<Edge> edges) {
-		return getOutgoingEdges(vertex, edges).isEmpty();
+		return Sets.intersection(vertex.getIncomingEdges(), edges).size() + Sets.intersection(vertex.getOutgoingEdges(), edges).size();
 	}
 
 	private Set<Edge> reverseEdges(Set<Edge> edges) {
@@ -499,42 +482,6 @@ public class LayeredLayout implements Layout {
 		edges.forEach(edge -> edgesReversed.add(new Edge(edge.getTarget(), edge.getSource(), edge.getCaption())));
 
 		return edgesReversed;
-	}
-
-	private Set<Edge> getIncomingEdges(Vertex vertex, Set<Edge> edges) {
-		Set<Edge> incomingEdges = new HashSet<>();
-
-		edges.forEach(edge -> {
-			if (edge.getTarget().equals(vertex)) {
-				incomingEdges.add(edge);
-			}
-		});
-
-		return incomingEdges;
-	}
-
-	private Set<Edge> getOutgoingEdges(Vertex vertex, Set<Edge> edges) {
-		Set<Edge> outgoingEdges = new HashSet<>();
-
-		edges.forEach(edge -> {
-			if (edge.getSource().equals(vertex)) {
-				outgoingEdges.add(edge);
-			}
-		});
-
-		return outgoingEdges;
-	}
-
-	private Set<Vertex> getSuccessors(Vertex vertex, Set<Edge> edges) {
-		Set<Vertex> successors = new HashSet<>();
-
-		edges.forEach(edge -> {
-			if (edge.getSource().equals(vertex)) {
-				successors.add(edge.getTarget());
-			}
-		});
-
-		return successors;
 	}
 
 	@Override
